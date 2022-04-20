@@ -28,6 +28,19 @@ RecordID SlottedPage::add(const Dbt* data) {
     return id;
 }
 
+Dbt *SlottedPage::get(RecordID record_id) {
+    u16 size;
+    u16 loc; 
+    get_header(size, loc, record_id);
+
+    if (size == 0) return nullptr;
+
+    char* data = new char(size);
+
+    memcpy(data, this->address(loc), size);
+
+}
+
 // Get 2-byte integer at given offset in block.
 u16 SlottedPage::get_n(u16 offset) {
     return *(u16*)this->address(offset);
@@ -114,4 +127,28 @@ Handles* HeapTable::select(const ValueDict* where) {
     }
     delete block_ids;
     return handles;
+}
+
+void HeapTable::create() {
+
+}
+
+void HeapTable::create_if_not_exists() {
+
+}
+
+void HeapTable::drop() {
+
+}
+
+void HeapTable::open() {
+
+}
+
+void HeapTable::close() {
+
+}
+
+Handle HeapTable::insert(const ValueDict *row) {
+    
 }
