@@ -66,6 +66,36 @@ void SlottedPage::put_header(RecordID id, u16 size, u16 loc) {
     put_n(4*id + 2, loc);
 }
 
+void SlottedPage::put(RecordID record_id, const Dbt &data){
+    // TODO
+}
+
+void SlottedPage::del(RecordID record_id) {
+    // TODO
+}
+
+RecordIDs *SlottedPage::ids(void) {
+    //TODO
+}
+
+void SlottedPage::get_header(u_int16_t &size, u_int16_t &loc, RecordID id = 0) {
+    //TODO
+}
+
+bool SlottedPage::has_room(u_int16_t size) {
+    //TODO
+}
+
+void SlottedPage::slide(u_int16_t start, u_int16_t end){
+    //TODO
+}
+
+void *SlottedPage::address(u_int16_t offset) {
+    //TODO
+}
+
+
+//************************************HEAPFILE************************************
 // Allocate a new block for the database file.
 // Returns the new empty DbBlock that is managing the records in this block and its block id.
 SlottedPage* HeapFile::get_new(void) {
@@ -83,6 +113,9 @@ SlottedPage* HeapFile::get_new(void) {
     return page;
 }
 
+
+
+//************************************HEAPTABLE************************************
 // return the bits to go into the file
 // caller responsible for freeing the returned Dbt and its enclosed ret->get_data().
 Dbt* HeapTable::marshal(const ValueDict* row) {
