@@ -69,7 +69,24 @@ void SlottedPage::put_header(RecordID id, u16 size, u16 loc) {
 }
 
 void SlottedPage::put(RecordID record_id, const Dbt &data){
-    // TODO
+    u16 size;
+    u16 loc;
+    get_header(size, loc, record_id);
+    u16 newSize = data.get_size();
+    
+    if (newSize > size) {
+        u16 extra = newSize - size;
+        if (!has_room(extra))
+            throw DbBlockNoRoomError("not enough room for updated record");
+        slide(loc, loc - extra);
+        memcpy(this->address(loc - extra), data.get_data(), newSize);
+    } else {
+        memcpy(this->address(loc), data.get_data(), newSize);
+        slide(loc + newSize, loc + size);
+    }
+    
+    get_header(size, loc, record_id);
+    put_header(record_id, newSize, loc);
 }
 
 void SlottedPage::del(RecordID record_id) {
