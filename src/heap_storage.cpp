@@ -102,7 +102,15 @@ void SlottedPage::del(RecordID record_id) {
 }
 
 RecordIDs *SlottedPage::ids(void) {
-    //TODO
+    RecordIDs* record_ids = new RecordIDs();
+    u16 size;
+    u16 loc;
+    for (RecordID record_id = 1; record_id < this->num_records + 1; record_id++) {
+        get_header(size, loc, record_id);
+        if (size > 0)
+            record_ids->push_back(record_id);
+    }
+    return record_ids;
 }
 
 void SlottedPage::get_header(u_int16_t &size, u_int16_t &loc, RecordID id = 0) {
