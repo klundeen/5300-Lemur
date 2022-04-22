@@ -38,6 +38,8 @@ Dbt *SlottedPage::get(RecordID record_id) {
     char* data = new char(size);
 
     memcpy(data, this->address(loc), size);
+    
+    return new Dbt(this->address(loc), size);
 
 }
 
