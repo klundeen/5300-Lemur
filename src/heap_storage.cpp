@@ -101,6 +101,7 @@ void SlottedPage::del(RecordID record_id) {
     slide(loc, loc + size);
 }
 
+// Returns pointer to a vector of recordIDs
 RecordIDs *SlottedPage::ids(void) {
     RecordIDs* record_ids = new RecordIDs();
     u16 size;
@@ -113,13 +114,16 @@ RecordIDs *SlottedPage::ids(void) {
     return record_ids;
 }
 
+// Get size and offset for recordID
 void SlottedPage::get_header(u_int16_t &size, u_int16_t &loc, RecordID id = 0) {
     size = get_n(4 * id);
     loc = get_n(4 * id + 2);
 }
 
+// Calculate if there's room to store record of given size
 bool SlottedPage::has_room(u_int16_t size) {
-    //TODO
+    u16 available = this->end_free - ((this->num_records + 2) * 4);
+    return size <= available;
 }
 
 void SlottedPage::slide(u_int16_t start, u_int16_t end){
