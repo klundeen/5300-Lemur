@@ -114,7 +114,8 @@ RecordIDs *SlottedPage::ids(void) {
 }
 
 void SlottedPage::get_header(u_int16_t &size, u_int16_t &loc, RecordID id = 0) {
-    //TODO
+    size = get_n(4 * id);
+    loc = get_n(4 * id + 2);
 }
 
 bool SlottedPage::has_room(u_int16_t size) {
