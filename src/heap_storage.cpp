@@ -92,8 +92,13 @@ void SlottedPage::put(RecordID record_id, const Dbt &data){
     put_header(record_id, newSize, loc);
 }
 
+// Deletes record by setting size/loc to 0 and shifting free data
 void SlottedPage::del(RecordID record_id) {
-    // TODO
+    u16 size;
+    u16 loc;
+    get_header(size, loc, record_id);
+    put_header(record_id, 0, 0);
+    slide(loc, loc + size);
 }
 
 RecordIDs *SlottedPage::ids(void) {
