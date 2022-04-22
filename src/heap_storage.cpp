@@ -4,6 +4,7 @@ bool test_heap_storage() {return true;}
 
 typedef u_int16_t u16;
 
+// Constructor
 SlottedPage::SlottedPage(Dbt &block, BlockID block_id, bool is_new) : DbBlock(block, block_id, is_new) {
     if (is_new) {
         this->num_records = 0;
@@ -28,6 +29,7 @@ RecordID SlottedPage::add(const Dbt* data) {
     return id;
 }
 
+// Get record from the block, return nullptr if doesn't exist
 Dbt *SlottedPage::get(RecordID record_id) {
     u16 size;
     u16 loc; 
@@ -68,6 +70,7 @@ void SlottedPage::put_header(RecordID id, u16 size, u16 loc) {
     put_n(4*id + 2, loc);
 }
 
+// Update record with new data
 void SlottedPage::put(RecordID record_id, const Dbt &data){
     u16 size;
     u16 loc;
