@@ -127,10 +127,6 @@ bool SlottedPage::has_room(u_int16_t size) {
 }
 
 void SlottedPage::slide(u_int16_t start, u_int16_t end){
-    //TODO
-}
-
-void *SlottedPage::address(u_int16_t offset) {
     int shift = end - start;
     if (shift == 0)
         return;
@@ -149,6 +145,10 @@ void *SlottedPage::address(u_int16_t offset) {
     delete record_ids;
     this->end_free += shift;
     put_header();
+}
+
+void *SlottedPage::address(u_int16_t offset) {
+    //TODO
 }
 
 
