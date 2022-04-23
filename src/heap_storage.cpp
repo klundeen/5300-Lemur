@@ -156,6 +156,39 @@ SlottedPage* HeapFile::get_new(void) {
 
 
 //************************************HEAPTABLE************************************
+
+HeapTable::HeapTable(Identifier table_name, ColumnNames column_names, ColumnAttributes column_attributes) : DbRelation(table_name, column_names,column_attributes), file(table_name) {
+
+}
+
+void HeapTable::create() {
+    file.create();
+}
+
+void HeapTable::open() {
+    file.open();
+}
+
+void HeapTable::close() {
+    file.close();
+}
+
+void HeapTable::create_if_not_exists() {
+    try {
+        file.open();
+    } catch (...){
+        file.create();
+    }
+}
+
+void HeapTable::drop() {
+    file.drop();
+}
+
+Handle HeapTable::insert(const ValueDict *row) {
+    //TODO but we'll only handle two data types for now, INTEGER (or INT) and TEXT
+}
+
 // return the bits to go into the file
 // caller responsible for freeing the returned Dbt and its enclosed ret->get_data().
 Dbt* HeapTable::marshal(const ValueDict* row) {
@@ -200,28 +233,4 @@ Handles* HeapTable::select(const ValueDict* where) {
     }
     delete block_ids;
     return handles;
-}
-
-void HeapTable::create() {
-
-}
-
-void HeapTable::create_if_not_exists() {
-
-}
-
-void HeapTable::drop() {
-
-}
-
-void HeapTable::open() {
-
-}
-
-void HeapTable::close() {
-
-}
-
-Handle HeapTable::insert(const ValueDict *row) {
-    
 }
