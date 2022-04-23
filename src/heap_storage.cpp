@@ -170,23 +170,27 @@ SlottedPage* HeapFile::get_new(void) {
 
 
 //************************************HEAPTABLE************************************
-
+// Constructor
 HeapTable::HeapTable(Identifier table_name, ColumnNames column_names, ColumnAttributes column_attributes) : DbRelation(table_name, column_names,column_attributes), file(table_name) {
 
 }
 
+// Create table
 void HeapTable::create() {
     file.create();
 }
 
+// Open existing table
 void HeapTable::open() {
     file.open();
 }
 
+// Close table
 void HeapTable::close() {
     file.close();
 }
 
+// Create table if doesn't exist
 void HeapTable::create_if_not_exists() {
     try {
         file.open();
@@ -195,16 +199,19 @@ void HeapTable::create_if_not_exists() {
     }
 }
 
+// Drop table
 void HeapTable::drop() {
     file.drop();
 }
 
+// Return handle of inserted row
 Handle HeapTable::insert(const ValueDict *row) {
-    //TODO but we'll only handle two data types for now, INTEGER (or INT) and TEXT
+    open();
+    return append(validate(row));
 }
 
-// return the bits to go into the file
-// caller responsible for freeing the returned Dbt and its enclosed ret->get_data().
+// Return the bits to go into the file
+// Caller responsible for freeing the returned Dbt and its enclosed ret->get_data().
 Dbt* HeapTable::marshal(const ValueDict* row) {
     char *bytes = new char[DbBlock::BLOCK_SZ]; // more than we need (we insist that one row fits into DbBlock::BLOCK_SZ)
     uint offset = 0;
@@ -234,6 +241,7 @@ Dbt* HeapTable::marshal(const ValueDict* row) {
     return data;
 }
 
+// Return handles for rows requested by select
 Handles* HeapTable::select(const ValueDict* where) {
     Handles* handles = new Handles();
     BlockIDs* block_ids = file.block_ids();
