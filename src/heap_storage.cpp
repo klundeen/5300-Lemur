@@ -56,7 +56,7 @@ void SlottedPage::put_n(u16 offset, u16 n) {
 }
 
 // Make a void* pointer for a given offset into the data block.
-void* SlottedPage::address(u16 offset) {
+void *SlottedPage::address(u_int16_t offset) {
     return (void*)((char*)this->block.get_data() + offset);
 }
 
@@ -115,7 +115,7 @@ RecordIDs *SlottedPage::ids(void) {
 }
 
 // Get size and offset for recordID
-void SlottedPage::get_header(u_int16_t &size, u_int16_t &loc, RecordID id = 0) {
+void SlottedPage::get_header(u_int16_t &size, u_int16_t &loc, RecordID id) {
     size = get_n(4 * id);
     loc = get_n(4 * id + 2);
 }
@@ -126,6 +126,7 @@ bool SlottedPage::has_room(u_int16_t size) {
     return size <= available;
 }
 
+// Moves data to accommodate a smaller or larger data input
 void SlottedPage::slide(u_int16_t start, u_int16_t end){
     int shift = end - start;
     if (shift == 0)
@@ -145,10 +146,6 @@ void SlottedPage::slide(u_int16_t start, u_int16_t end){
     delete record_ids;
     this->end_free += shift;
     put_header();
-}
-
-void *SlottedPage::address(u_int16_t offset) {
-    //TODO
 }
 
 
