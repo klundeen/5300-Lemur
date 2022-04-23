@@ -131,7 +131,24 @@ void SlottedPage::slide(u_int16_t start, u_int16_t end){
 }
 
 void *SlottedPage::address(u_int16_t offset) {
-    //TODO
+    int shift = end - start;
+    if (shift == 0)
+        return;
+    int newSize = start - (this->end_free + 1);
+    memcpy(this->address(this->end_free + 1 + shift), this->address(this->end_free + 1), newSize);
+    RecordIDs* record_ids = ids();
+    for (auto const& record_id : *record_ids) {
+        u16 size;
+        u16 loc;
+        get_header(size, loc, record_id);
+        if (loc <= start) {
+            loc += shift;
+            put_header(record_id, size, loc);
+        }
+    }
+    delete record_ids;
+    this->end_free += shift;
+    put_header();
 }
 
 
