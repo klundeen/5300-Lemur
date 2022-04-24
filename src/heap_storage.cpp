@@ -277,7 +277,13 @@ void HeapTable::update(const Handle handle, const ValueDict* new_values) {
 
 // Delete values from table
 void HeapTable::del(const Handle handle) {
-    
+    open();
+    BlockID block_id = get<0>(handle);
+    RecordID record_id = get<1>(handle);
+    SlottedPage* block = this->file.get(block_id);
+    block->del(record_id);
+    this->file.put(block);
+    delete block;
 }
 
 // Return column names for handle
