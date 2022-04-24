@@ -136,6 +136,36 @@ void *SlottedPage::address(u_int16_t offset) {
 
 
 //************************************HEAPFILE************************************
+
+HeapFile::HeapFile(std::string name) : DbFile(name), dbfilename(""), last(0), closed(true), db(_DB_ENV, 0) {
+
+}
+
+void HeapFile::create(void) {
+    this->db_open(DB_CREATE | DB_EXCL);
+    SlottedPage* block = this->get_new();
+    this->put(block);
+}
+
+void HeapFile::drop(void) {
+    this->close();
+    remove(dbfilename.c_str());
+}
+
+void HeapFile::open(void) {
+    this->db_open();
+    //TODO
+}
+
+void HeapFile::close(void) {
+    this->db.close(0);
+    this->closed = true;
+}
+
+SlottedPage *HeapFile::get(BlockID block_id) {
+    return SlottedPage()
+}
+
 // Allocate a new block for the database file.
 // Returns the new empty DbBlock that is managing the records in this block and its block id.
 SlottedPage* HeapFile::get_new(void) {
@@ -151,6 +181,18 @@ SlottedPage* HeapFile::get_new(void) {
     this->db.put(nullptr, &key, &data, 0); // write it out with initialization applied
     this->db.get(nullptr, &key, &data, 0);
     return page;
+}
+
+void HeapFile::put(DbBlock *block) {
+
+}
+
+BlockIDs *HeapFile::block_ids() {
+
+}
+
+void HeapFile::db_open(uint flags = 0) {
+
 }
 
 
