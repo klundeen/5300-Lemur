@@ -182,7 +182,7 @@ void HeapFile::close(void) {
 
 SlottedPage *HeapFile::get(BlockID block_id) {
     Dbt data;
-    Dbt key;
+    Dbt key(&block_id, sizeof(block_id));
     this->db.get(nullptr, &key, &data, 0);
     return new SlottedPage(data, block_id);
 }
@@ -206,7 +206,9 @@ SlottedPage* HeapFile::get_new(void) {
 
 // Write block back to database file
 void HeapFile::put(DbBlock* block) {
-    
+    u16 block_id = block->get_block_id();
+    Dbt key(&block_id, sizeof(block_id));
+    this->db.put(nullptr, &key, block->get_block(), DB_NOOVERWRITE);
 }
 
 // Return pointer to vector of block ids
