@@ -151,6 +151,12 @@ void SlottedPage::slide(u_int16_t start, u_int16_t end){
 
 
 //************************************HEAPFILE************************************
+
+
+HeapFile::HeapFile(std::string name) : DbFile(name), dbfilename(""), last(0), closed(true), db(_DB_ENV, 0) {
+
+}
+
 // Create file
 void HeapFile::create(void) {
     db_open(DB_CREATE | DB_EXCL);
@@ -159,7 +165,8 @@ void HeapFile::create(void) {
 
 // Delete file
 void HeapFile::drop(void) {
-    
+    this->close();
+    remove(dbfilename.c_str());
 }
 
 // Open file
@@ -169,43 +176,17 @@ void HeapFile::open(void) {
 
 // Close file
 void HeapFile::close(void) {
-    
-}
-
-<<<<<<< HEAD
-//************************************HEAPFILE************************************
-
-HeapFile::HeapFile(std::string name) : DbFile(name), dbfilename(""), last(0), closed(true), db(_DB_ENV, 0) {
-
-}
-
-void HeapFile::create(void) {
-    this->db_open(DB_CREATE | DB_EXCL);
-    SlottedPage* block = this->get_new();
-    this->put(block);
-}
-
-void HeapFile::drop(void) {
-    this->close();
-    remove(dbfilename.c_str());
-}
-
-void HeapFile::open(void) {
-    this->db_open();
-    //TODO
-}
-
-void HeapFile::close(void) {
     this->db.close(0);
     this->closed = true;
 }
 
 SlottedPage *HeapFile::get(BlockID block_id) {
-    return SlottedPage()
+    Dbt data;
+    Dbt key;
+    this->db.get(nullptr, &key, &data, 0);
+    return new SlottedPage(data, block_id);
 }
 
-=======
->>>>>>> 02bea39484c5f47a6fe357d694abb2ef64abcaf9
 // Allocate a new block for the database file.
 // Returns the new empty DbBlock that is managing the records in this block and its block id.
 SlottedPage* HeapFile::get_new(void) {
@@ -223,26 +204,6 @@ SlottedPage* HeapFile::get_new(void) {
     return page;
 }
 
-<<<<<<< HEAD
-void HeapFile::put(DbBlock *block) {
-
-}
-
-BlockIDs *HeapFile::block_ids() {
-
-}
-
-void HeapFile::db_open(uint flags = 0) {
-
-}
-
-=======
-// Get a block from database file
-SlottedPage* HeapFile::get(BlockID block_id) {
-    
-}
->>>>>>> 02bea39484c5f47a6fe357d694abb2ef64abcaf9
-
 // Write block back to database file
 void HeapFile::put(DbBlock* block) {
     
@@ -254,6 +215,11 @@ BlockIDs* HeapFile::block_ids() {
     for (BlockID block_id = 1; block_id <= this->last; block_id++)
         block_ids->push_back(block_id);
     return block_ids;
+}
+
+
+void HeapFile::db_open(uint flags = 0) {
+
 }
 
 //************************************HEAPTABLE************************************
