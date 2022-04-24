@@ -221,7 +221,12 @@ BlockIDs* HeapFile::block_ids() {
 
 
 void HeapFile::db_open(uint flags) {
-
+    if (!this->closed)
+        return;
+    this->db.set_re_len(DbBlock::BLOCK_SZ);
+    DBTYPE dbT = DB_RECNO;
+    this->db.open(nullptr, this->dbfilename.c_str(), nullptr, dbT, flags, 0);
+    this->closed = false;
 }
 
 //************************************HEAPTABLE************************************
