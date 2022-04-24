@@ -178,7 +178,13 @@ SlottedPage* HeapFile::get_new(void) {
     return page;
 }
 
-
+// Return pointer to vector of block ids
+BlockIDs* HeapFile::block_ids() {
+    BlockIDs* block_ids = new BlockIDs();
+    for (BlockID block_id = 1; block_id <= this->last; block_id++)
+        block_ids->push_back(block_id);
+    return block_ids;
+}
 
 //************************************HEAPTABLE************************************
 // Constructor
