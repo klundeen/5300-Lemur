@@ -259,7 +259,7 @@ void HeapTable::del(const Handle handle) {
 }
 
 // Return column names for handle
-ValueDict* HeapTable::project(Handle handle) {
+ValueDict* HeapTable::project(Handle handle, const ColumnNames *column_names) {
     
 }
 
