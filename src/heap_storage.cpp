@@ -150,6 +150,12 @@ void SlottedPage::slide(u_int16_t start, u_int16_t end){
 
 
 //************************************HEAPFILE************************************
+// Create file
+void HeapFile::create(void) {
+    db_open(DB_CREATE | DB_EXCL);
+    put(get_new());
+}
+
 // Open file
 void HeapFile::open(void) {
     db_open();
