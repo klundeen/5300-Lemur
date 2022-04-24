@@ -150,6 +150,11 @@ void SlottedPage::slide(u_int16_t start, u_int16_t end){
 
 
 //************************************HEAPFILE************************************
+// Open file
+void HeapFile::open(void) {
+    db_open();
+}
+
 // Allocate a new block for the database file.
 // Returns the new empty DbBlock that is managing the records in this block and its block id.
 SlottedPage* HeapFile::get_new(void) {
