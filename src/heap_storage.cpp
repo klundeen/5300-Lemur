@@ -218,7 +218,7 @@ BlockIDs* HeapFile::block_ids() {
 }
 
 
-void HeapFile::db_open(uint flags = 0) {
+void HeapFile::db_open(uint flags) {
 
 }
 
