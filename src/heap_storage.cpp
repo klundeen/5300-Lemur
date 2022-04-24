@@ -157,9 +157,19 @@ void HeapFile::create(void) {
     put(get_new());
 }
 
+// Delete file
+void HeapFile::drop(void) {
+    
+}
+
 // Open file
 void HeapFile::open(void) {
     db_open();
+}
+
+// Close file
+void HeapFile::close(void) {
+    
 }
 
 // Allocate a new block for the database file.
@@ -177,6 +187,16 @@ SlottedPage* HeapFile::get_new(void) {
     this->db.put(nullptr, &key, &data, 0); // write it out with initialization applied
     this->db.get(nullptr, &key, &data, 0);
     return page;
+}
+
+// Get a block from database file
+SlottedPage* HeapFile::get(BlockID block_id) {
+    
+}
+
+// Write block back to database file
+void HeapFile::put(DbBlock* block) {
+    
 }
 
 // Return pointer to vector of block ids
