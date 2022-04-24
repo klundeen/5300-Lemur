@@ -248,6 +248,21 @@ Handle HeapTable::insert(const ValueDict *row) {
     return append(validate(row));
 }
 
+// Update values by finding handle
+void HeapTable::update(const Handle handle, const ValueDict* new_values) {
+    
+}
+
+// Delete values from table
+void HeapTable::del(const Handle handle) {
+    
+}
+
+// Return column names for handle
+ValueDict* HeapTable::project(Handle handle) {
+    
+}
+
 // Return the bits to go into the file
 // Caller responsible for freeing the returned Dbt and its enclosed ret->get_data().
 Dbt* HeapTable::marshal(const ValueDict* row) {
