@@ -1,6 +1,7 @@
 #include "heap_storage.h"
 #include <cstring>
-bool test_heap_storage() {return true;}
+#include <memory.h>
+using namespace std;
 
 typedef u_int16_t u16;
 
@@ -273,3 +274,5 @@ Handles* HeapTable::select(const ValueDict* where) {
     delete block_ids;
     return handles;
 }
+
+bool test_heap_storage() {return true;}
