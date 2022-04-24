@@ -288,7 +288,21 @@ void HeapTable::del(const Handle handle) {
 
 // Return column names for handle
 ValueDict* HeapTable::project(Handle handle, const ColumnNames *column_names) {
-    
+   open();
+    BlockID block_id = get<0>(handle);
+    RecordID record_id = get<1>(handle);
+    SlottedPage* block = file.get(block_id);
+    Dbt* data = block->get(block_id);
+    ValueDict* row = unmarshal(data);
+    delete data;
+    delete block;
+    if (column_names->empty())
+        return row;
+    ValueDict* result = new ValueDict();
+    for (uint i = 0; i < result->size(); i++)
+        result[i] = row[i];
+    delete row;
+    return result;
 }
 
 // Return the bits to go into the file
