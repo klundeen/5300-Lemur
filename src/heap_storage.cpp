@@ -222,7 +222,7 @@ BlockIDs* HeapFile::block_ids() {
     return block_ids;
 }
 
-
+// Wrapper for Berkeley DB open
 void HeapFile::db_open(uint flags) {
     if (!this->closed)
         return;
