@@ -380,7 +380,7 @@ ValueDict* HeapTable::unmarshal(Dbt* data) {
         if (ca.get_data_type() == ColumnAttribute::DataType::INT) {
             value.n = *(int32_t*)((char*)data->get_data() + offset);
             offset += sizeof(int32_t);
-        } else if (c.get_data_type() == ColumnAttribute::DataType::TEXT) {
+        } else if (ca.get_data_type() == ColumnAttribute::DataType::TEXT) {
             u16 size = *(u16*)((char*)data->get_data() + offset);
             offset += sizeof(u16);
             char* buffer = new char[size];
