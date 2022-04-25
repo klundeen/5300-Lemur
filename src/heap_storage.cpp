@@ -292,7 +292,7 @@ ValueDict* HeapTable::project(Handle handle, const ColumnNames *column_names) {
     BlockID block_id = get<0>(handle);
     RecordID record_id = get<1>(handle);
     SlottedPage* block = file.get(block_id);
-    Dbt* data = block->get(block_id);
+    Dbt* data = block->get(record_id);
     ValueDict* row = unmarshal(data);
     delete data;
     delete block;
