@@ -2,7 +2,7 @@
  * Diego Hoyos, Erika Skornia-Olsen
  * CPSC 4300/5300 Spring 2022
  * References: Milestone 2h, heap_storage.py
- * Oracle Berkeley DB Release 18.1
+ * Oracle Berkeley DB Release 18.1, C/C++ API Reference
  * www.geeksforgeeks.org/vector-in-cpp-stl/
  */
 
