@@ -1,3 +1,11 @@
+/* heap_storage.cpp
+ * Diego Hoyos, Erika Skornia-Olsen
+ * CPSC 4300/5300 Spring 2022
+ * References: Milestone 2h, heap_storage.py
+ * Oracle Berkeley DB Release 18.1
+ * www.geeksforgeeks.org/vector-in-cpp-stl/
+ */
+
 #include "heap_storage.h"
 #include <cstring>
 #include <memory.h>
