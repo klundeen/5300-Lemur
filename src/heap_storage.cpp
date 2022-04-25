@@ -152,11 +152,6 @@ void SlottedPage::slide(u_int16_t start, u_int16_t end){
 
 //************************************HEAPFILE************************************
 
-
-HeapFile::HeapFile(std::string name) : DbFile(name), dbfilename(""), last(0), closed(true), db(_DB_ENV, 0) {
-
-}
-
 // Create file
 void HeapFile::create(void) {
     db_open(DB_CREATE | DB_EXCL);
