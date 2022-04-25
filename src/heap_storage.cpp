@@ -368,6 +368,34 @@ Dbt* HeapTable::marshal(const ValueDict* row) {
     return data;
 }
 
+// Convert data back to values
+ValueDict* HeapTable::unmarshal(Dbt* data) {
+    ValueDict* row = new ValueDict();
+    Value value;
+    uint offset = 0;
+    uint col_num = 0;
+    for (auto const& column_name: this->column_names) {
+        ColumnAttribute ca = this->column_attributes[col_num++];
+        value.data_type = ca.get_data_type();
+        if (ca.get_data_type() == ColumnAttribute::DataType::INT) {
+            value.n = *(int32_t*)((char*)data->get_data() + offset);
+            offset += sizeof(int32_t);
+        } else if (c.get_data_type() == ColumnAttribute::DataType::TEXT) {
+            u16 size = *(u16*)((char*)data->get_data() + offset);
+            offset += sizeof(u16);
+            char* buffer = new char[size];
+            memcpy(buffer, (char*)data->get_data() + offset, size);
+            value.s = string(buffer);
+            offset += size;
+            delete[] buffer;
+        } else {
+            throw DbRelationError("only know how to unmarshal INT and TEXT");
+        }
+        (*row)[column_name] = value;
+    }
+    return row;
+}
+
 // Return handles for rows requested by select
 Handles* HeapTable::select(const ValueDict* where) {
     Handles* handles = new Handles();
