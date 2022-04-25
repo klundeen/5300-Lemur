@@ -428,7 +428,7 @@ Handles* HeapTable::select(const ValueDict* where) {
 }
 
 // test function -- returns true if all tests pass
-/*bool test_heap_storage() {
+bool test_heap_storage() {
     ColumnNames column_names;
     column_names.push_back("a");
     column_names.push_back("b");
@@ -463,4 +463,4 @@ Handles* HeapTable::select(const ValueDict* where) {
         return false;
     table.drop();
     return true;
-}*/
+}
