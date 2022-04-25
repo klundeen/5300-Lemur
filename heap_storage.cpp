@@ -411,6 +411,8 @@ ValueDict* HeapTable::unmarshal(Dbt* data) {
     return row;
 }
 
+Handles* HeapTable::select() {}
+
 // Return handles for rows requested by select
 Handles* HeapTable::select(const ValueDict* where) {
     Handles* handles = new Handles();

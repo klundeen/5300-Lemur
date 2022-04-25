@@ -20,7 +20,12 @@ Milestone 2:
     
     a storage engine based on a heap file organization.  SlottedPage class, HeapFile class, and HeapTable class has been implemented.
 
-    //TODO
-    Unable to compile and test with Makefile.
+    To build: $ make
+
+    to run: $./sql5300 ~/cpsc5300/data
+
+    to test: type test when prompted
+
+    //TODO: Code breaks when it attempts to open the database
 
     

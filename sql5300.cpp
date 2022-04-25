@@ -17,6 +17,8 @@
 using namespace std;
 using namespace hsql;
 
+DbEnv *_DB_ENV;
+
 string columnDefToString(const ColumnDefinition* col);
 string execute(const SQLStatement* stmt);
 string executeCreate(const CreateStatement* stmt);
@@ -300,7 +302,7 @@ int main(int argc, char** argv)
     if (toLower(query) == "quit")
       break;
     if (toLower(query) == "test") {
-            //cout << "test_heap_storage: " << (test_heap_storage() ? "ok" : "failed") << endl;
+            cout << "test_heap_storage: " << (test_heap_storage() ? "ok" : "failed") << endl;
             continue;
         }
     SQLParserResult* result = SQLParser::parseSQLString(query.c_str());
