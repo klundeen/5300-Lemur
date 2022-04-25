@@ -305,6 +305,20 @@ ValueDict* HeapTable::project(Handle handle, const ColumnNames *column_names) {
     return result;
 }
 
+// Check if given row can accept insert; if yes, return full row
+ValueDict* HeapTable::validate(const ValueDict* row) {
+    ValueDict* full_row = new ValueDict();
+    for (auto const& column_name: this->column_names) {
+        if (row->find(column_name) != row->end()) {
+            Value value = row->find(column_name)->second;
+            (*full_row)[column_name] = value;
+        }
+        else
+            throw DbRelationError("don't know how to handle NULLs, defaults, etc. yet");
+    }
+    return full_row;
+}
+
 // Return the bits to go into the file
 // Caller responsible for freeing the returned Dbt and its enclosed ret->get_data().
 Dbt* HeapTable::marshal(const ValueDict* row) {
