@@ -3,8 +3,7 @@
  * CPSC 4300/5300 Spring 2022
  * References: Milestone 2h, heap_storage.py
  * Oracle Berkeley DB Release 18.1, C/C++ API Reference
- * www.geeksforgeeks.org/vector-in-cpp-stl/
- */
+ * www.geeksforgeeks.org/vector-in-cpp-stl/ */
 
 #include "heap_storage.h"
 #include <cstring>
@@ -275,7 +274,15 @@ Handle HeapTable::insert(const ValueDict *row) {
 
 // Update values by finding handle
 void HeapTable::update(const Handle handle, const ValueDict* new_values) {
-    
+    ValueDict* row = project(handle);
+    for (uint i = 0; i < row->size(); i++)
+      row[i] = new_values[i];
+    ValueDict* full_row = validate(row);
+    BlockID block_id = get<0>(handle);
+    RecordID record_id = get<1>(handle);
+    SlottedPage* block = this->file.get(block_id);
+    block->put(record_id, *(marshal(full_row)));
+    this->file.put(block);
 }
 
 // Delete values from table
@@ -287,6 +294,11 @@ void HeapTable::del(const Handle handle) {
     block->del(record_id);
     this->file.put(block);
     delete block;
+}
+
+ValueDict* HeapTable::project(Handle handle)
+{
+  return project(handle, &this->column_names);
 }
 
 // Return column names for handle
@@ -302,7 +314,7 @@ ValueDict* HeapTable::project(Handle handle, const ColumnNames *column_names) {
     if (column_names->empty())
         return row;
     ValueDict* result = new ValueDict();
-    for (uint i = 0; i < result->size(); i++)
+    for (uint i = 0; i < row->size(); i++)
         result[i] = row[i];
     delete row;
     return result;
@@ -415,4 +427,40 @@ Handles* HeapTable::select(const ValueDict* where) {
     return handles;
 }
 
-bool test_heap_storage() {return true;}
+// test function -- returns true if all tests pass
+/*bool test_heap_storage() {
+    ColumnNames column_names;
+    column_names.push_back("a");
+    column_names.push_back("b");
+    ColumnAttributes column_attributes;
+    ColumnAttribute ca(ColumnAttribute::INT);
+    column_attributes.push_back(ca);
+    ca.set_data_type(ColumnAttribute::TEXT);
+    column_attributes.push_back(ca);
+    HeapTable table1("_test_create_drop_cpp", column_names, column_attributes);
+    table1.create();
+    cout << "create ok" << endl;
+    table1.drop();  // drop makes the object unusable because of BerkeleyDB restriction -- maybe want to fix this some day
+    cout << "drop ok" << endl;
+    HeapTable table("_test_data_cpp", column_names, column_attributes);
+    table.create_if_not_exists();
+    cout << "create_if_not_exsts ok" << endl;
+    ValueDict row;
+    row["a"] = Value(12);
+    row["b"] = Value("Hello!");
+    cout << "try insert" << endl;
+    table.insert(&row);
+    cout << "insert ok" << endl;
+    Handles* handles = table.select(nullptr);
+    cout << "select ok " << handles->size() << endl;
+    ValueDict *result = table.project((*handles)[0]);
+    cout << "project ok" << endl;
+    Value value = (*result)["a"];
+    if (value.n != 12)
+        return false;
+    value = (*result)["b"];
+    if (value.s != "Hello!")
+        return false;
+    table.drop();
+    return true;
+}*/
