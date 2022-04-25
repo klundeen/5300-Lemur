@@ -319,6 +319,24 @@ ValueDict* HeapTable::validate(const ValueDict* row) {
     return full_row;
 }
 
+// Assume row is fleshed out, append record to file
+Handle HeapTable::append(const ValueDict* row) {
+    Dbt* data = marshal(row);
+    BlockID block_id = this->file.get_last_block_id();
+    SlottedPage* block = this->file.get(block_id);
+    RecordID record_id;
+    try {
+        record_id = block->add(data);
+    } catch (DbBlockNoRoomError& e) {
+        block = this->file.get_new();
+        record_id = block->add(data);
+    }
+    this->file.put(block);
+    delete data;
+    delete block;
+    return Handle(block_id, record_id);
+}
+
 // Return the bits to go into the file
 // Caller responsible for freeing the returned Dbt and its enclosed ret->get_data().
 Dbt* HeapTable::marshal(const ValueDict* row) {
