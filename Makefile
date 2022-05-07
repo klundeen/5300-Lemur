@@ -1,28 +1,31 @@
-# Makefile, Diego Hoyos, Erika Skornia-Olsen
-# Seattle University, CPSC5300, Spring 2022
+CXX := g++
+CXXFLAGS := -I/usr/local/db6/include -std=c++17 -Wall -g
+LFLAGS := -L/usr/local/db6/lib -ldb_cxx -lsqlparser
 
-CCFLAGS     = -std=c++11 -std=c++0x -Wall -Wno-c++11-compat -DHAVE_CXX_STDHEADERS -D_GNU_SOURCE -D_REENTRANT -O3 -c -ggdb
-COURSE      = /usr/local/db6
-INCLUDE_DIR = $(COURSE)/include
-LIB_DIR     = $(COURSE)/lib
+sql5300: sql5300.o SQLExecutor.o heap_storage.o ParseTreeToString.o schema_tables.o
+	$(CXX) $(LFLAGS) -o $@ $^
 
-# following is a list of all the compiled object files needed to build the sql5300 executable
-OBJS       = heap_storage.o sql5300.o
+test: test.o heap_storage.o 
+	$(CXX) $(LFLAGS) -o $@ $^
 
-# Rule for linking to create the executable
-# Note that this is the default target since it is the first non-generic one in the Makefile: $ make
+test.o: heap_storage_test.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-sql5300: $(OBJS)
-	g++ -L$(LIB_DIR) -o $@ $(OBJS) -ldb_cxx -lsqlparser
+sql5300.o: sql5300.cpp
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-sql5300.o : heap_storage.h storage_engine.h
-heap_storage.o : heap_storage.h storage_engine.h
+schema_tables.o: schema_tables.cpp schema_tables.h
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-# General rule for compilation
-%.o: %.cpp
-	g++ -I$(INCLUDE_DIR) $(CCFLAGS) -o "$@" "$<"
+ParseTreeToString.o: ParseTreeToString.cpp ParseTreeToString.h
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-# Rule for removing all non-source files (so they can get rebuilt from scratch)
-# Note that since it is not the first target, you have to invoke it explicitly: $ make clean
-clean:
-	rm -f sql5300 *.o
+SQLExecutor.o: SQLExecutor.cpp SQLExecutor.h
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
+heap_storage.o : heap_storage.cpp heap_storage.h storage_engine.h
+	$(CXX) $(CXXFLAGS) -c -o $@ $<
+
+
+clean : 
+	rm -f *.o *.001 *.002 *.003 *.db
