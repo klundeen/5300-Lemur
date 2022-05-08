@@ -1,9 +1,11 @@
 /**
  * @file SQLExec.cpp - implementation of SQLExec class
  * @author Kevin Lundeen
+ * @authors Luan (Remi) Ta, Preedhi Garg
  * @see "Seattle University, CPSC5300, Spring 2022"
  */
 #include "SQLExecutor.h"
+#include "ParseTreeToString.h"
 
 using namespace std;
 using namespace hsql;
@@ -44,7 +46,10 @@ ostream &operator<<(ostream &out, const QueryResult &qres) {
 
 void SQLExec::closeMeta()
 {
-    tables->close();
+    if (tables != nullptr) {
+        tables->close();
+        delete tables;
+    }
 }
 
 QueryResult::~QueryResult() {
@@ -59,7 +64,7 @@ QueryResult *SQLExec::execute(const SQLStatement *statement) {
         initialize_schema_tables();
         tables = new Tables();        
     }    
-
+    cout << ParseTreeToString::statement(statement) << endl;
     try {
         switch (statement->type()) {
             case kStmtCreate:

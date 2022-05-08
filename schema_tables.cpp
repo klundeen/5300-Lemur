@@ -153,6 +153,21 @@ DbRelation &Tables::get_table(Identifier table_name) {
     return *table;
 }
 
+void Tables::close()
+{
+    if (columns_table != nullptr)
+        columns_table->close();
+    HeapTable::close();
+}
+
+Tables::~Tables()
+{
+    for (auto const pair : table_cache) {
+        if (pair.first != TABLE_NAME && pair.first != columns_table->TABLE_NAME)
+            delete pair.second;
+    }
+}
+
 
 /*
  * ****************************
@@ -227,11 +242,4 @@ Handle Columns::insert(const ValueDict *row) {
         throw DbRelationError("duplicate column " + row->at("table_name").s + "." + row->at("column_name").s);
 
     return HeapTable::insert(row);
-}
-
-void Tables::close()
-{
-    if (columns_table != nullptr)
-        columns_table->close();
-    HeapTable::close();
 }

@@ -34,7 +34,7 @@ public:
     // ctor/dtor
     Tables();
 
-    virtual ~Tables() {}
+    virtual ~Tables();
 
     // HeapTable overrides
     virtual void create();
