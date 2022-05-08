@@ -13,6 +13,16 @@ using namespace hsql;
 // define static data
 Tables *SQLExec::tables = nullptr;
 
+
+Tables* SQLExec::getInstance()
+{
+    if (tables == nullptr){        
+        initialize_schema_tables();
+        tables = new Tables();        
+    }    
+    return tables;
+}
+
 // make query result be printable
 ostream &operator<<(ostream &out, const QueryResult &qres) {
     if (qres.column_names != nullptr) {
@@ -92,6 +102,7 @@ SQLExec::column_definition(const ColumnDefinition *col, Identifier &column_name,
         case ColumnDefinition::DataType::TEXT:
             column_attribute = ColumnAttribute(ColumnAttribute::DataType::TEXT);
             break;
+        
         default:
             throw InvalidDataType("DataType not recognized");
     }
@@ -134,6 +145,9 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
                 case ColumnAttribute::DataType::TEXT:
                     colData["data_type"] = Value("TEXT");
                     break;
+                case ColumnAttribute::DataType::BOOLEAN:
+                    colData["data_type"] = Value("BOOLEAN");
+                    break;
                 default:
                     throw InvalidDataType("DataType not recognized");
             }
@@ -163,7 +177,7 @@ QueryResult *SQLExec::drop(const DropStatement *statement) {
     string tabName(statement->name);
     if (statement->type != DropStatement::EntityType::kTable)
         return new QueryResult("Error: not implemented");
-    if (tabName == "_columns" || tabName == "_tables")
+    if (tabName == Columns::TABLE_NAME || tabName == Tables::TABLE_NAME || tabName == Indices::TABLE_NAME)
         return new QueryResult("Error: Unable to drop " + tabName);
     
     try {
@@ -211,8 +225,9 @@ QueryResult *SQLExec::show_tables() {
 
     for (const Handle &handle: *handles) {
         ValueDict* row = tables->project(handle, colNames);
-        if (((*row)["table_name"]) != Value(string("_tables")) 
-         && ((*row)["table_name"]) != Value(string("_columns")) ) {
+        if (((*row)["table_name"]) != Value(Tables::TABLE_NAME) 
+         && ((*row)["table_name"]) != Value(Columns::TABLE_NAME)
+         && ((*row)["table_name"]) != Value(Indices::TABLE_NAME) ) {
             rows->push_back(row);
         }
 
@@ -236,8 +251,12 @@ QueryResult *SQLExec::show_columns(const ShowStatement *statement) {
         
         if (colAtrs.at(i).get_data_type() == ColumnAttribute::DataType::INT)
             (*row)["data_type"] = Value(string("INT"));
-        else
+        else if (colAtrs.at(i).get_data_type() == ColumnAttribute::DataType::TEXT)
             (*row)["data_type"] = Value(string("TEXT"));
+        else if (colAtrs.at(i).get_data_type() == ColumnAttribute::DataType::BOOLEAN)
+            (*row)["data_type"] = Value(string("BOOLEAN"));
+        else
+            throw InvalidDataType("DataType not recognized");        
 
         rows->push_back(row);
     }
@@ -254,4 +273,13 @@ QueryResult *SQLExec::show_columns(const ShowStatement *statement) {
     showColAtrs->push_back(ColumnAttribute(ColumnAttribute::DataType::TEXT));
 
     return new QueryResult(showColNames, showColAtrs, rows, "successfully returned " + to_string(rows->size()) + " rows");
+}
+
+
+QueryResult *SQLExec::show_index(const ShowStatement *statement) {
+     return new QueryResult("show index not implemented"); // FIXME
+}
+
+QueryResult *SQLExec::drop_index(const DropStatement *statement) {
+    return new QueryResult("drop index not implemented");  // FIXME
 }

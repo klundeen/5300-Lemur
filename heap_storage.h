@@ -166,8 +166,6 @@ public:
 
     virtual ValueDict *project(Handle handle, const ColumnNames *column_names);
 
-    using DbRelation::project;
-
 protected:
     HeapFile file;
 

@@ -14,7 +14,7 @@ test.o: heap_storage_test.cpp
 sql5300.o: sql5300.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
-schema_tables.o: schema_tables.cpp schema_tables.h
+schema_tables.o: schema_tables.cpp schema_tables.h 
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 ParseTreeToString.o: ParseTreeToString.cpp ParseTreeToString.h

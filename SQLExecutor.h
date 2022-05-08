@@ -66,6 +66,7 @@ public:
      * @returns           the query result (freed by caller)
      */
     static QueryResult *execute(const hsql::SQLStatement *statement);
+    static Tables* getInstance(); 
     static void closeMeta();
 
 protected:
@@ -83,6 +84,9 @@ protected:
 
     static QueryResult *show_columns(const hsql::ShowStatement *statement);
 
+    static QueryResult *drop_index(const hsql::DropStatement *statement);
+
+    static QueryResult *show_index(const hsql::ShowStatement *statement);
 
     /**
      * Pull out column name and attributes from AST's column definition clause

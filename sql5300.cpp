@@ -28,21 +28,24 @@ int main(int argc, char* argv[])
 	env->set_error_stream(&std::cerr);
     env->open(argv[1], DB_CREATE, 0);
 
+    std::cout << "(sql5300: running with database environment at " << argv[1] << ")" << std::endl;
+
     std::string usrIn;
     std::cout << "SQL> ";
     std::getline(std::cin, usrIn);
     
     while (usrIn != "quit"){
-        SQLParserResult* res = SQLParser::parseSQLString(usrIn);
-
-        if (res->isValid()) {
-            for (unsigned int i = 0; i < res->size(); i++) {
-                std::cout << *std::unique_ptr<QueryResult>(SQLExec::execute(res->getStatement(i))) << std::endl;
+        if(usrIn.find_first_not_of(' ') != std::string::npos) { // Skip empty input   
+            SQLParserResult* res = SQLParser::parseSQLString(usrIn);
+            
+            if (res->isValid()) {
+                for (unsigned int i = 0; i < res->size(); i++) {
+                    std::cout << *std::unique_ptr<QueryResult>(SQLExec::execute(res->getStatement(i))) << std::endl;
+                }
+            } else {
+                std::cout << "Invalid SQL: " << usrIn << std::endl;
             }
-        } else {
-            std::cout << "Invalid SQL: " << usrIn << std::endl;
         }
-
         std::cout << "SQL> ";
         std::getline(std::cin, usrIn);
     }
