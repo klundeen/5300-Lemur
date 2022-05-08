@@ -256,8 +256,10 @@ void HeapFile::open(void) {
  * Close the physical file.
  */
 void HeapFile::close(void) {
-    this->db.close(0);
-    this->closed = true;
+    if (!closed) {
+        this->db.close(0);
+        this->closed = true;
+    }
 }
 
 /**

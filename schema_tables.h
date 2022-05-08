@@ -60,6 +60,8 @@ public:
      */
     virtual DbRelation &get_table(Identifier table_name);
 
+    virtual void close();
+
 protected:
     // hard-coded columns for _tables table
     static ColumnNames &COLUMN_NAMES();

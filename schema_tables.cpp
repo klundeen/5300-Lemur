@@ -228,3 +228,10 @@ Handle Columns::insert(const ValueDict *row) {
 
     return HeapTable::insert(row);
 }
+
+void Tables::close()
+{
+    if (columns_table != nullptr)
+        columns_table->close();
+    HeapTable::close();
+}

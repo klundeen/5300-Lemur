@@ -46,6 +46,7 @@ int main(int argc, char* argv[])
         std::cout << "SQL> ";
         std::getline(std::cin, usrIn);
     }
+    SQLExec::closeMeta();
     delete _DB_ENV;
     return 0;
 }

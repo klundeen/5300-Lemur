@@ -66,6 +66,7 @@ public:
      * @returns           the query result (freed by caller)
      */
     static QueryResult *execute(const hsql::SQLStatement *statement);
+    static void closeMeta();
 
 protected:
     // the one place in the system that holds the _tables table
@@ -81,6 +82,7 @@ protected:
     static QueryResult *show_tables();
 
     static QueryResult *show_columns(const hsql::ShowStatement *statement);
+
 
     /**
      * Pull out column name and attributes from AST's column definition clause

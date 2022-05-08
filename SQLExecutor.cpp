@@ -42,10 +42,15 @@ ostream &operator<<(ostream &out, const QueryResult &qres) {
     return out;
 }
 
+void SQLExec::closeMeta()
+{
+    tables->close();
+}
+
 QueryResult::~QueryResult() {
     if (column_names != nullptr) delete column_names;
     if (column_attributes != nullptr) delete column_attributes;
-    if (rows != nullptr) delete rows;
+    if (rows != nullptr) delete rows;    
 }
 
 
@@ -68,7 +73,7 @@ QueryResult *SQLExec::execute(const SQLStatement *statement) {
         }
     } catch (DbRelationError &e) {
         throw SQLExecError(string("DbRelationError: ") + e.what());
-    }
+    } 
 }
 
 void
@@ -107,7 +112,7 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
     DbRelation* colMeta = &tables->get_table("_columns"); // DO NOT deallocate: singleton in table cache
 
     try {
-        colMeta->open();
+        
         // Insert metadata
         unique_ptr<ValueDict> tabData(new ValueDict);
         (*tabData)["table_name"] = Value(statement->tableName);
@@ -135,6 +140,7 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
 
         // We're all clear. Can go ahead and create the physical table
         tab.create();
+        tab.close();
     
         return new QueryResult("created " + string(statement->tableName));
 
