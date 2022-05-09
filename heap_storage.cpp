@@ -579,8 +579,8 @@ Dbt *HeapTable::marshal(const ValueDict *row) const {
         } else if (ca.get_data_type() == ColumnAttribute::DataType::BOOLEAN) {
             if (offset + 1 > DbBlock::BLOCK_SZ - 1)
                 throw DbRelationError("row too big to marshal");
-            *(uint8_t *) (bytes + offset) = (uint8_t) value.n;
-            offset += sizeof(uint8_t);
+            *(bool *) (bytes + offset) = (bool) value.b;
+            offset += sizeof(bool);
         } else {
             throw DbRelationError("Only know how to marshal INT, TEXT, and BOOLEAN");
         }
@@ -618,8 +618,8 @@ ValueDict *HeapTable::unmarshal(Dbt *data) const {
             value.s = string(buffer);  // assume ascii for now
             offset += size;
         } else if (ca.get_data_type() == ColumnAttribute::DataType::BOOLEAN) {
-            value.n = *(uint8_t *) (bytes + offset);
-            offset += sizeof(uint8_t);
+            value.b = *(bool *) (bytes + offset);
+            offset += sizeof(bool);
         } else {
             throw DbRelationError("Only know how to unmarshal INT, TEXT, and BOOLEAN");
         }

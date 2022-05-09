@@ -239,6 +239,7 @@ public:
     ColumnAttribute::DataType data_type;
     int32_t n;
     std::string s;
+    bool b;
 
     Value() : n(0) { data_type = ColumnAttribute::INT; }
 
@@ -246,7 +247,8 @@ public:
     {
         if (other.data_type != this->data_type) return false;
         return     (data_type == ColumnAttribute::DataType::INT && other.n == this->n)
-                || (data_type == ColumnAttribute::DataType::TEXT && other.s == this->s);
+                || (data_type == ColumnAttribute::DataType::TEXT && other.s == this->s)
+                || (data_type == ColumnAttribute::DataType::BOOLEAN && other.b == this->b);
     }
 
     bool operator!=(const Value &other) const
@@ -254,9 +256,20 @@ public:
         return !(*this == other);
     }
 
+    Value& operator=(const char* cs) {
+        data_type = ColumnAttribute::TEXT;
+        s = std::string(cs);
+        n = 0;
+
+        return *this;
+    }
+
     Value(int32_t n) : n(n) { data_type = ColumnAttribute::INT; }
 
     Value(std::string s) : n(0), s(s) { data_type = ColumnAttribute::TEXT; }
+    Value(const char* s) : n(0), s(std::string(s)) { data_type = ColumnAttribute::TEXT; }
+
+    Value(bool b) : n(0), s(""), b(b) { data_type = ColumnAttribute::BOOLEAN; }
 };
 
 // More type aliases

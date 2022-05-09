@@ -62,12 +62,11 @@ public:
 
     virtual void close();
 
-protected:
     // hard-coded columns for _tables table
     static ColumnNames &COLUMN_NAMES();
 
     static ColumnAttributes &COLUMN_ATTRIBUTES();
-
+protected:
     // keep a reference to the columns table (for get_columns method)
     static Columns *columns_table;
 
@@ -97,11 +96,11 @@ public:
 
     virtual Handle insert(const ValueDict *row);
 
-protected:
     // hard-coded columns for the _columns table
     static ColumnNames &COLUMN_NAMES();
 
     static ColumnAttributes &COLUMN_ATTRIBUTES();
+
 };
 
 using IndexNames = ColumnNames;
@@ -151,7 +150,6 @@ public:
 
     virtual void del(Handle handle);
 
-protected:
     static ColumnNames &COLUMN_NAMES();
 
     static ColumnAttributes &COLUMN_ATTRIBUTES();
@@ -159,3 +157,4 @@ protected:
 private:
     static std::map<std::pair<Identifier, Identifier>, DbIndex *> index_cache;
 };
+

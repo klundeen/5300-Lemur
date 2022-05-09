@@ -6,12 +6,14 @@
  */
 #include "SQLExecutor.h"
 #include "ParseTreeToString.h"
+#include <vector>
 
 using namespace std;
 using namespace hsql;
 
 // define static data
-Tables *SQLExec::tables = nullptr;
+Tables* SQLExec::tables = nullptr;
+Indices* SQLExec::indices = nullptr;
 
 
 Tables* SQLExec::getInstance()
@@ -42,6 +44,9 @@ ostream &operator<<(ostream &out, const QueryResult &qres) {
                     case ColumnAttribute::TEXT:
                         out << "\"" << value.s << "\"";
                         break;
+                    case ColumnAttribute::BOOLEAN:
+                        out << "\"" << (value.b ? "true" : "false") << "\"";
+                        break;
                     default:
                         out << "???";
                 }
@@ -60,20 +65,29 @@ void SQLExec::closeMeta()
         tables->close();
         delete tables;
     }
+    if (indices != nullptr) {
+        indices->close();
+        delete indices;
+    }
 }
 
 QueryResult::~QueryResult() {
-    if (column_names != nullptr) delete column_names;
-    if (column_attributes != nullptr) delete column_attributes;
-    if (rows != nullptr) delete rows;    
+    // Col names & atrs are not dynamic but static
+    if (rows != nullptr) {
+        for (const ValueDict* dict : *rows) delete dict;
+        delete rows; 
+    }   
 }
 
 
 QueryResult *SQLExec::execute(const SQLStatement *statement) {
-    if (tables == nullptr){        
+    if (tables == nullptr) {        
         initialize_schema_tables();
         tables = new Tables();        
-    }    
+    } 
+    if (indices == nullptr) {
+        indices = new Indices();
+    }
     cout << ParseTreeToString::statement(statement) << endl;
     try {
         switch (statement->type()) {
@@ -108,7 +122,21 @@ SQLExec::column_definition(const ColumnDefinition *col, Identifier &column_name,
     }
 }
 
-QueryResult *SQLExec::create(const CreateStatement *statement) {
+QueryResult *SQLExec::create(const CreateStatement *statement) 
+{
+    switch (statement->type)
+    {
+    case CreateStatement::CreateType::kTable:
+        return createTable(statement);
+    case CreateStatement::CreateType::kIndex:
+        return createIndex(statement);
+    default:
+        return new QueryResult("Unknown CreateType not implemented");
+    }
+}
+
+QueryResult* SQLExec::createTable(const CreateStatement *statement) 
+{
     ColumnNames* colNames = new ColumnNames;
     ColumnAttributes* colAtrs = new ColumnAttributes;
 
@@ -125,7 +153,7 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
     Handles colHands; // in case we need to rollback
     Handle* tabHand = nullptr;
 
-    DbRelation* colMeta = &tables->get_table("_columns"); // DO NOT deallocate: singleton in table cache
+    DbRelation* colMeta = &tables->get_table(Columns::TABLE_NAME); // DO NOT deallocate: singleton in table cache
 
     try {
         
@@ -171,45 +199,117 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
         return new QueryResult("Error: DbRelationError: " + string(e.what()));
     }
 }
+QueryResult* SQLExec::createIndex(const CreateStatement *statement)
+{
+    string tabName(statement->tableName);
+    string idxName(statement->indexName);
+    string idxType(statement->indexType);
+    ColumnNames cols;
+    ColumnAttributes colAtrs;
+
+    try {
+        DbRelation* tab = &tables->get_table(tabName);
+    } catch (...) {            
+        return new QueryResult("Error: table " + tabName + " does not exist");
+    }
+
+    tables->get_columns(tabName, cols, colAtrs);    
+    ValueDict row;
+    row["table_name"] = tabName;
+    row["index_name"] = idxName;
+    row["index_type"] = idxType;    
+    row["is_unique"] = Value(idxType == "BTREE");
+
+    int seq = 1;
+    Handles insertedIdx;
+    for (const char* idxCol : *statement->indexColumns) {
+        string curCol(idxCol);
+        if (find(cols.begin(), cols.end(), curCol) == cols.end()){
+            for (const Handle& hand : insertedIdx) indices->del(hand);
+            return new QueryResult("Error: Mismatch index columns on table " + tabName + " for index " + idxName);
+        }
+        row["column_name"] = curCol;
+        row["seq_in_index"] = seq++;
+        try {
+            insertedIdx.push_back(indices->insert(&row));
+        } catch (DbRelationError& e) {
+            // Failure... rollback changes
+            for (const Handle& hand : insertedIdx) indices->del(hand);
+            
+            return new QueryResult("Error: DbRelationError: " + string(e.what()));
+        }
+    }
+    // All's clear
+    DbIndex* idxTab = &indices->get_index(tabName, idxName);
+    idxTab->create();
+    idxTab->close();
+
+    return new QueryResult("created index " + idxName);    
+}
 
 // DROP ...
 QueryResult *SQLExec::drop(const DropStatement *statement) {
+    switch (statement->type)
+    {
+    case DropStatement::EntityType::kTable:
+        return drop_table(statement);   
+    case DropStatement::EntityType::kIndex:
+        return drop_index(statement); 
+    default:
+        return new QueryResult("Unknown EntityType not implemented");
+    }
+
+}
+
+QueryResult *SQLExec::drop_table(const hsql::DropStatement *statement)
+{
     string tabName(statement->name);
     if (statement->type != DropStatement::EntityType::kTable)
         return new QueryResult("Error: not implemented");
     if (tabName == Columns::TABLE_NAME || tabName == Tables::TABLE_NAME || tabName == Indices::TABLE_NAME)
         return new QueryResult("Error: Unable to drop " + tabName);
     
-    try {
-        // Drop table file first
-        DbRelation* tab = &tables->get_table(statement->name);
-        tab->drop();
+    // Drop table file first
+    DbRelation* tab = &tables->get_table(statement->name);
+    tab->drop();
 
-        ValueDict where;
-        where["table_name"] = Value(tabName);
-        // Delete metadata from _tables
-        tables->del(*unique_ptr<Handles>(tables->select(&where))->begin());
+    ValueDict where;
+    where["table_name"] = Value(tabName);
+    // Delete metadata from _tables
+    tables->del(*unique_ptr<Handles>(tables->select(&where))->begin());
 
-        // Delete metadata from _columns
-        DbRelation* colMeta = &tables->get_table("_columns"); // DO NOT deallocate: singleton in table cache
-    
-        std::unique_ptr<Handles> rows(colMeta->select(&where));
+    // Delete metadata from _columns
+    DbRelation* colMeta = &tables->get_table(Columns::TABLE_NAME); // DO NOT deallocate: singleton in table cache
 
-        for (const Handle& hand : *rows)
-            colMeta->del(hand);        
+    std::unique_ptr<Handles> rows(colMeta->select(&where));
 
-        return new QueryResult("dropped ");
+    for (const Handle& hand : *rows)
+        colMeta->del(hand);        
 
-    } catch (DbRelationError& e) {
-        return new QueryResult("Error: DbRelationError: " + string(e.what()));
-    }
-
+    return new QueryResult("dropped table " + tabName);
 }
 
+QueryResult *SQLExec::drop_index(const DropStatement *statement) {
+    string tabName(statement->name);
+    string idxName(statement->indexName);
+    
+
+    return new QueryResult("dropped index " + idxName);  // FIXME
+}
+
+
 QueryResult *SQLExec::show(const ShowStatement *statement) {
-    if (statement->type == ShowStatement::EntityType::kTables)    
+    switch (statement->type)
+    {
+    case ShowStatement::EntityType::kTables:
         return show_tables();
-    return show_columns(statement);
+    case ShowStatement::EntityType::kColumns:
+        return show_columns(statement);
+    case ShowStatement::EntityType::kIndex:
+        return show_index(statement);
+    default:
+        return new QueryResult("Unknown EntityType not implemented");
+    }       
 }
 
 QueryResult *SQLExec::show_tables() {
@@ -217,11 +317,9 @@ QueryResult *SQLExec::show_tables() {
 
     ValueDicts* rows = new ValueDicts;
 
-    ColumnNames* colNames = new ColumnNames;
-    colNames->push_back("table_name");
+    ColumnNames* colNames = &Tables::COLUMN_NAMES();
 
-    ColumnAttributes* atrs = new ColumnAttributes;
-    atrs->push_back(ColumnAttribute(ColumnAttribute::DataType::TEXT));
+    ColumnAttributes* atrs = &Tables::COLUMN_ATTRIBUTES();
 
     for (const Handle &handle: *handles) {
         ValueDict* row = tables->project(handle, colNames);
@@ -230,7 +328,6 @@ QueryResult *SQLExec::show_tables() {
          && ((*row)["table_name"]) != Value(Indices::TABLE_NAME) ) {
             rows->push_back(row);
         }
-
     }
 
     return new QueryResult(colNames, atrs, rows, "successfully returned " + to_string(rows->size()) + " rows");
@@ -261,25 +358,27 @@ QueryResult *SQLExec::show_columns(const ShowStatement *statement) {
         rows->push_back(row);
     }
 
-    ColumnNames* showColNames = new ColumnNames;
-    ColumnAttributes* showColAtrs = new ColumnAttributes;
-
-    showColNames->push_back("table_name");
-    showColNames->push_back("column_name");
-    showColNames->push_back("data_type");
-
-    showColAtrs->push_back(ColumnAttribute(ColumnAttribute::DataType::TEXT));
-    showColAtrs->push_back(ColumnAttribute(ColumnAttribute::DataType::TEXT));
-    showColAtrs->push_back(ColumnAttribute(ColumnAttribute::DataType::TEXT));
+    ColumnNames* showColNames = &Columns::COLUMN_NAMES();
+    ColumnAttributes* showColAtrs = &Columns::COLUMN_ATTRIBUTES();
 
     return new QueryResult(showColNames, showColAtrs, rows, "successfully returned " + to_string(rows->size()) + " rows");
 }
 
 
 QueryResult *SQLExec::show_index(const ShowStatement *statement) {
-     return new QueryResult("show index not implemented"); // FIXME
-}
+    ColumnNames* colNames = &Indices::COLUMN_NAMES();
+    ColumnAttributes* colAtrs = &Indices::COLUMN_ATTRIBUTES();
+    string tabName(statement->tableName);
 
-QueryResult *SQLExec::drop_index(const DropStatement *statement) {
-    return new QueryResult("drop index not implemented");  // FIXME
+    ValueDict where;
+    where["table_name"] = tabName;
+    unique_ptr<Handles> hands(indices->select(&where));
+
+    ValueDicts* rows = new ValueDicts;
+
+    for (const Handle& hand : *hands) {
+        rows->push_back(indices->project(hand));
+    }
+
+    return new QueryResult(colNames, colAtrs, rows, "successfully returned " + to_string(rows->size()) + " rows"); // FIXME
 }

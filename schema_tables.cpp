@@ -385,7 +385,7 @@ void Indices::get_columns(Identifier table_name, Identifier index_name, ColumnNa
     delete handles;
 }
 
-// FIXME - use this for now until we have BTreeIndex and HashIndex
+// FIXME: use this for now until we have BTreeIndex and HashIndex
 class DummyIndex : public DbIndex {
 public:
     DummyIndex(DbRelation &rel, Identifier idx, ColumnNames key, bool unq) : DbIndex(rel, idx, key, unq) {}
