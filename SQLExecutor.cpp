@@ -254,7 +254,7 @@ QueryResult *SQLExec::drop(const DropStatement *statement) {
     case DropStatement::EntityType::kTable:
         return drop_table(statement);   
     case DropStatement::EntityType::kIndex:
-        return drop_index(statement); 
+        return drop_index(statement->name, statement->indexName); 
     default:
         return new QueryResult("Unknown EntityType not implemented");
     }
@@ -269,7 +269,11 @@ QueryResult *SQLExec::drop_table(const hsql::DropStatement *statement)
     if (tabName == Columns::TABLE_NAME || tabName == Tables::TABLE_NAME || tabName == Indices::TABLE_NAME)
         return new QueryResult("Error: Unable to drop " + tabName);
     
-    // Drop table file first
+    // Drop each index
+    for (auto const& idx : indices->get_index_names(tabName))
+        unique_ptr<QueryResult>(drop_index(tabName, idx));
+
+    // Drop table file
     DbRelation* tab = &tables->get_table(statement->name);
     tab->drop();
 
@@ -284,16 +288,28 @@ QueryResult *SQLExec::drop_table(const hsql::DropStatement *statement)
     std::unique_ptr<Handles> rows(colMeta->select(&where));
 
     for (const Handle& hand : *rows)
-        colMeta->del(hand);        
+        colMeta->del(hand);
 
     return new QueryResult("dropped table " + tabName);
 }
 
-QueryResult *SQLExec::drop_index(const DropStatement *statement) {
-    string tabName(statement->name);
-    string idxName(statement->indexName);
-    
+QueryResult *SQLExec::drop_index(string tabName, string idxName) {  
+    DbIndex* idxTab = &indices->get_index(tabName, idxName);
 
+    try {
+        idxTab->drop();
+    } catch (...) {
+        return new QueryResult("Index " + idxName + " from table " + tabName + " is not found");
+    }
+
+    ValueDict where;
+    where["table_name"] = tabName;
+    where["index_name"] = idxName;
+    unique_ptr<Handles> hands(indices->select(&where));
+
+    for (const Handle& hand : *hands) // should only run once
+        indices->del(hand);
+    
     return new QueryResult("dropped index " + idxName);  // FIXME
 }
 
@@ -380,5 +396,5 @@ QueryResult *SQLExec::show_index(const ShowStatement *statement) {
         rows->push_back(indices->project(hand));
     }
 
-    return new QueryResult(colNames, colAtrs, rows, "successfully returned " + to_string(rows->size()) + " rows"); // FIXME
+    return new QueryResult(colNames, colAtrs, rows, "successfully returned " + to_string(rows->size()) + " rows");
 }
