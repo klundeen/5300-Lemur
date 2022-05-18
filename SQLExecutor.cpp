@@ -137,19 +137,19 @@ QueryResult *SQLExec::create(const CreateStatement *statement)
 
 QueryResult* SQLExec::createTable(const CreateStatement *statement) 
 {
-    ColumnNames* colNames = new ColumnNames;
-    ColumnAttributes* colAtrs = new ColumnAttributes;
+    ColumnNames colNames;
+    ColumnAttributes colAtrs;
 
     for (ColumnDefinition* def : *statement->columns) {
         Identifier curName;
         ColumnAttribute curAtr;
 
         column_definition(def, curName, curAtr);
-        colNames->push_back(curName);
-        colAtrs->push_back(curAtr);
+        colNames.push_back(curName);
+        colAtrs.push_back(curAtr);
     }
 
-    HeapTable tab(string(statement->tableName), *colNames, *colAtrs);
+    HeapTable tab(string(statement->tableName), colNames, colAtrs);
     Handles colHands; // in case we need to rollback
     Handle* tabHand = nullptr;
 
@@ -165,8 +165,8 @@ QueryResult* SQLExec::createTable(const CreateStatement *statement)
 
         ValueDict colData;
 
-        for (int i = 0; i < colAtrs->size(); i++) {
-            switch (colAtrs->at(i).get_data_type()) {
+        for (int i = 0; i < colAtrs.size(); i++) {
+            switch (colAtrs.at(i).get_data_type()) {
                 case ColumnAttribute::DataType::INT:
                     colData["data_type"] = Value("INT");
                     break;
@@ -180,7 +180,7 @@ QueryResult* SQLExec::createTable(const CreateStatement *statement)
                     throw InvalidDataType("DataType not recognized");
             }
             colData["table_name"] = Value(statement->tableName);
-            colData["column_name"] = Value(colNames->at(i));
+            colData["column_name"] = Value(colNames.at(i));
 
             colHands.push_back(colMeta->insert(&colData)); // in case we need to rollback
         } 

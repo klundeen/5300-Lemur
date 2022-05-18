@@ -23,11 +23,7 @@ int main(int argc, char* argv[])
         std::cerr << "Usage: ./sql5300 env_path" << std::endl;
         return -1;
     }
-    DbEnv* env = new DbEnv(0U);
-    env->set_message_stream(&std::cout);
-	env->set_error_stream(&std::cerr);
-    env->open(argv[1], DB_CREATE, 0);
-
+    
     std::cout << "(sql5300: running with database environment at " << argv[1] << ")" << std::endl;
 
     std::string usrIn;
