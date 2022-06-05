@@ -4,6 +4,7 @@
  * @see "Seattle University, CPSC5300, Spring 2022"
  */
 #include "SQLExec.h"
+#include "EvalPlan.h"
 
 using namespace std;
 using namespace hsql;
@@ -88,20 +89,273 @@ QueryResult *SQLExec::execute(const SQLStatement *statement) {
     }
 }
 
+// NOT DONE
+Value SQLExec::_get_value_from_parse(const Expr* value, ColumnAttribute ca, std::string column, std::string Command){
+
+  // Translate the parse tree value into the right data type
+  Value found_value;
+  if(ca.get_data_type() == ColumnAttribute::INT){
+    found_value = value->ival;
+  }
+  else if(ca.get_data_type() == ColumnAttribute::TEXT){
+    found_value = std::string(value->name);
+  }
+  else{
+    throw SQLExecError("don't know how to handle " + to_string(ca.get_data_type()) + " data type in " + Command);
+  }
+  return found_value;
+}
+
+// Check the where condition 
+ValueDict *SQLExec::_get_where_conjunction(Expr *whereExpression, const ColumnNames *columns){
+  // pull out conjunctions of equality predicates from parse tree
+  
+  ValueDict *where = new ValueDict();
+  if(whereExpression == nullptr){
+    return nullptr;
+  }
+
+  std::vector<Expr*> whereValues;
+  std::vector<char> operators;
+  std::vector<string> columnRefs;
+  std::vector<string> conjunction_type;
+  whereParse(whereExpression, whereValues, operators, columnRefs, conjunction_type);
+
+  // still have to check that each columns match columns from parameter
+
+  int column_index = 0;
+  for(auto const &value : whereValues){
+    if(value->type == kExprLiteralString){
+      Value val(value->name);
+      (*where)[columnRefs[column_index]] = val;
+    }
+    else{
+      Value val(value->ival);
+      (*where)[columnRefs[column_index]] = val;
+    }
+    column_index++;
+  }
+ 
+  for(int i = 0; i < operators.size(); i++){
+    if(operators[i] != '='){
+      throw;
+    }
+  }
+  
+  for(int i = 0; i < conjunction_type.size(); i++){
+    if(conjunction_type[i] != "AND" && conjunction_type[i] != "NONE"){
+      throw;
+    }
+  }
+  
+  return where;
+}
+
+void SQLExec::whereParse(Expr* expression,
+                std::vector<Expr*> &whereValues,
+                std::vector<char> &operators,
+                std::vector<string> &columnRefs,
+                std::vector<string> &conjunction_type){
+
+
+  if(expression == nullptr){
+    return;
+  }
+
+  switch (expression->type) {
+  case kExprColumnRef:
+    columnRefs.push_back(expression->name);
+    break;
+  case kExprLiteralString:
+    whereValues.push_back(expression);
+    break;
+  case kExprLiteralInt:
+    whereValues.push_back(expression);
+    break;
+  case kExprOperator:
+    if(expression->opType == Expr::AND){
+      conjunction_type.push_back("AND");
+    }
+    else if(expression->opType == Expr::NONE){
+      conjunction_type.push_back("NONE");
+    }
+    else if(expression->opType == Expr::SIMPLE_OP){
+      if(expression->opChar == '='){
+        operators.push_back(expression->opChar);
+      }
+      else{
+        throw;
+      }
+    }
+    else{
+      throw;
+    }
+    break;
+  }
+  whereParse(expression->expr, whereValues, operators, columnRefs, conjunction_type);
+  whereParse(expression->expr2, whereValues, operators, columnRefs, conjunction_type);
+
+}
+
+
+
+// NOT DONE
 QueryResult *SQLExec::insert(const InsertStatement *statement) {
-    return new QueryResult("INSERT statement not yet implemented");  // FIXME
+  // get the tablename
+  std::string table_name = std::string(statement->tableName);
+  
+  // get the values from the expression 
+  std::vector<Expr *> *values = statement->values;
+
+  // get the table, column attributes, and column names
+  DbRelation &table = SQLExec::tables->get_table(table_name);
+  ColumnAttributes column_attributes;
+  ColumnNames column_names;
+  SQLExec::tables->get_columns(table_name, column_names, column_attributes);
+
+  std::vector<std::string> columns;
+  if(statement->columns == nullptr){
+    columns = column_names;
+  }
+  else{
+    std::vector<char *> *insertColumns = statement->columns;
+    for(auto const &col : *insertColumns){
+      columns.push_back(std::string(col));
+    }
+  }
+  
+  // do the insert
+  ValueDict row;
+  int i = 0;
+  for(auto const &value : *values){
+    std::string column = columns[i];
+    row[std::string(column)] = _get_value_from_parse(value, column_attributes[i], column, "INSERT");
+    i++;
+  }
+  Handle t_insert = table.insert(&row);
+  
+  // add to indices
+  int lengthFinder = 0;
+  for(auto const &index_name : SQLExec::indices->get_index_names(table_name)){
+    DbIndex &index = SQLExec::indices->get_index(table_name, index_name);
+    index.insert(t_insert);
+    lengthFinder++;
+  }
+
+  std::string suffix = "";
+  if(SQLExec::indices->get_index_names(table_name).size() != 0){
+    suffix = " and from " + to_string(lengthFinder) + " indices ";
+  }
+  std::string message = "successfully inserted 1 row into " + table_name + suffix; 
+  return new QueryResult(message);  
 }
 
+// NOT DONE
 QueryResult *SQLExec::del(const DeleteStatement *statement) {
-    return new QueryResult("DELETE statement not yet implemented");  // FIXME
+
+  // get table name 
+  std::string tableName = std::string(statement->tableName);
+  DbRelation &table = SQLExec::tables->get_table(tableName);
+  ColumnNames *cn = new ColumnNames;
+  ColumnAttributes *cas = new ColumnAttributes;
+  SQLExec::tables->get_columns(tableName, *cn, *cas);
+
+  // Get the where conjunction
+  ValueDict *where = new ValueDict;
+  where = _get_where_conjunction(statement->expr, cn);
+
+  EvalPlan plan = new EvalPlan(table);
+  EvalPipeline pipe;
+  if(where != nullptr){
+    EvalPlan plan2 = new EvalPlan(where, &plan);
+    EvalPlan plan3 = plan2.optimize();
+    pipe = plan3.pipeline();
+  }
+  else{
+    EvalPlan plan2 = plan.optimize();
+    pipe = plan2.pipeline();
+  }
+
+  // remove the indices
+  int lengthFinder = 0;
+  for(auto const &index_name : SQLExec::indices->get_index_names(tableName)){
+    DbIndex &index = SQLExec::indices->get_index(tableName, index_name);
+    for(auto const &handle : *pipe.second){
+      index.del(handle);
+    }
+    lengthFinder++;
+  }
+
+  std::string suffix = " and from " + to_string(lengthFinder) + " indices ";
+
+  // remove from the table
+  for(auto const &handle : *pipe.second){
+    table.del(handle);
+  }
+
+  delete cn;
+  delete cas;
+  delete where;
+  std::string message = "successfully deleted " + to_string(pipe.second->size()) + " rows" + suffix;
+  return new QueryResult(message);  
 }
 
+// NOT DONE
 QueryResult *SQLExec::select(const SelectStatement *statement) {
-    return new QueryResult("SELECT statement not yet implemented");  // FIXME
-}
 
-void
-SQLExec::column_definition(const ColumnDefinition *col, Identifier &column_name, ColumnAttribute &column_attribute) {
+  ColumnNames *columns = new ColumnNames;
+  
+  // get the table name
+  std::string tableName = statement->fromTable->name;
+  DbRelation &table = SQLExec::tables->get_table(tableName);
+  ColumnNames *cn = new ColumnNames;
+  ColumnAttributes *cas = new ColumnAttributes;
+  SQLExec::tables->get_columns(tableName, *cn, *cas);
+
+  // get the distinct columns if not a select all operation
+  // if(statement->selectDistinct){
+  for(Expr *expr : *statement->selectList){
+    if(expr->type == kExprStar){
+      columns = cn;
+      break;
+    }
+    columns->push_back(expr->name);
+  }
+    // }
+    //else{
+    //columns = cn;
+    //std::cout << "NOT DISTINCT" << std::endl;
+    // }
+
+  // get the where clause
+  ValueDict *where = new ValueDict;
+  where = _get_where_conjunction(statement->whereClause, columns);
+
+  // make the evaluatio plan
+  EvalPlan plan = new EvalPlan(table);
+  ValueDicts *rows = new ValueDicts();
+  if(where != nullptr){
+    EvalPlan plan2 = new EvalPlan(where, &plan);
+    EvalPlan plan3 = new EvalPlan(columns, &plan2);
+    EvalPlan plan4 = plan3.optimize();
+   
+    for(const auto& row : *plan4.evaluate()){
+      rows->push_back(row);
+    }
+    delete where;
+    return new QueryResult(columns, cas, rows, "Success");
+  }
+  else{
+    EvalPlan plan2 = new EvalPlan(columns, &plan);
+    EvalPlan plan3 = plan2.optimize();
+    for(const auto& row : *plan3.evaluate()){
+      rows->push_back(row);
+    }
+    delete where;
+    return new QueryResult(columns, cas, rows, "Success");
+  }
+}
+void SQLExec::column_definition(const ColumnDefinition *col, Identifier &column_name, ColumnAttribute &column_attribute) {
     column_name = col->name;
     switch (col->type) {
         case ColumnDefinition::INT:

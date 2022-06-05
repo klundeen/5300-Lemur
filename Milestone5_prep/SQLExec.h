@@ -1,3 +1,4 @@
+
 /**
  * @file SQLExec.h - SQLExec class
  * @author Kevin Lundeen
@@ -94,8 +95,17 @@ protected:
 
     static QueryResult *del(const hsql::DeleteStatement *statement);
 
-    static QueryResult *select(const hsql::SelectStatement *statement);
+  static QueryResult *select(const hsql::SelectStatement *statement);
 
+  static ValueDict *_get_where_conjunction(hsql::Expr *e, const ColumnNames *columns);
+
+  static Value _get_value_from_parse(const hsql::Expr *value, ColumnAttribute ca, std::string column, std::string command); 
+
+  static void whereParse(hsql::Expr *expression,
+                         std::vector<hsql::Expr*> &values,
+                         std::vector<char> &operators,
+                         std::vector<std::string> &columnRefs,
+                         std::vector<std::string> &conjunction_type);
     /**
      * Pull out column name and attributes from AST's column definition clause
      * @param col                AST column definition
