@@ -382,7 +382,15 @@ BTreeLeaf::~BTreeLeaf() {
 
 // Find the handle for a given key
 Handle BTreeLeaf::find_eq(const KeyValue *key) const {
+  //std::map<KeyValue, Handle>::iterator it;
+  auto it = key_map.find(*key);
+  Handle handle;
+  handle.first = -1;
+  handle.second = -1;
+  if(it != key_map.end()){
     return this->key_map.at(*key);
+  }
+  return handle;
 }
 
 // Save the key_map and next_leaf data in the correct order
