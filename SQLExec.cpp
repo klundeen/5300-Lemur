@@ -339,20 +339,24 @@ QueryResult *SQLExec::select(const SelectStatement *statement) {
     EvalPlan plan3 = new EvalPlan(columns, &plan2);
     EvalPlan plan4 = plan3.optimize();
    
+    int row_count = 0;
     for(const auto& row : *plan4.evaluate()){
       rows->push_back(row);
+      row_count++;
     }
     delete where;
-    return new QueryResult(columns, cas, rows, "Success");
+    return new QueryResult(columns, cas, rows, "Successfully returned " + to_string(row_count) + " rows");
   }
   else{
     EvalPlan plan2 = new EvalPlan(columns, &plan);
     EvalPlan plan3 = plan2.optimize();
+    int row_count = 0;
     for(const auto& row : *plan3.evaluate()){
       rows->push_back(row);
+      row_count++; 
     }
     delete where;
-    return new QueryResult(columns, cas, rows, "Success");
+    return new QueryResult(columns, cas, rows, "Successfully returned " + to_string(row_count) + " rows");
   }
 }
 void SQLExec::column_definition(const ColumnDefinition *col, Identifier &column_name, ColumnAttribute &column_attribute) {
