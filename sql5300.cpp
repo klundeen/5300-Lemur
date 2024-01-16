@@ -7,16 +7,85 @@
 // include the sql parser
 #include "SQLParser.h"
 
-
-// Run Makefile to create ~/cpsc5300/data as part of compilation
-const char *HOME = "cpsc5300/data";
-const char *EXAMPLE = "example.db";
+const char *HOME = "~/sql5300/data";
+const char *DB_NAME = "lemur.db";
 const unsigned int BLOCK_SZ = 4096;
 
-const char *home = std::getenv("HOME");
-std::string envdir = std::string(home) + "/" + HOME;
+/**
+ * Initialize database with environment configuration
+ * @param envdir  path to environment directory
+*/
+void initializeDbEnvironment(std::string envdir);
 
-void initializeDbEnvironment() {
+/**
+ * Extract expressions and append to sql command string builder
+ * @param expr  expression pointer contains sql data
+ * @param ss    string builder used to append data component to sql string
+*/
+void printExpression(hsql::Expr* expr, std::stringstream& ss);
+
+/**
+ * Parse table reference into sql data component and append to sql string
+ * @param table  table reference pointer
+ * @param ss     string builder used to append data component to sql string
+*/
+void printTableRefInfo(hsql::TableRef* table, std::stringstream& ss);
+
+/**
+ * Convert the hyrise ColumnDefinition AST back into the equivalent SQL
+ * @param col  column definition to unparse
+ * @return     SQL equivalent to *col
+ */
+std::string columnDefinitionToString(const hsql::ColumnDefinition *col);
+
+/**
+ * Convert the parser result back into equivalent SQL command string
+ * Support SELECT and CREATE statment
+ * @param result  parser result to unparse
+ * @return        SQL equivalent to *result
+*/
+std::string execute(hsql::SQLParserResult* result);
+
+/** Test driver for execute query function
+ * Output failed test into standard output
+ * @param query     input sql test query string
+ * @param expected  expected parsed sql string
+ */
+void testParseSQLQuery(std::string query, std::string expected);
+
+/** run all the specified test cases from assignment */
+void runTestCases();
+
+/** Start the sql shell loop */
+void runSqlShell();
+
+int main(int argc, char *argv[]) {
+	std::string envdir = HOME;
+    if ( argc >= 2 ) 
+        envdir = argv[1];
+    
+    std::cout << "Have you created a dir: " << HOME  << "? (y/n) ";
+	std::string ans;
+    std::getline(std::cin, ans);
+	if( ans[0] != 'y')
+		return 1;
+    
+    try {
+        initializeDbEnvironment(envdir);
+    } catch (DbException e) {
+        std::cout << "Provided directory not created! exiting..." << std::endl;
+        return 1;
+    }
+    
+    runTestCases();
+
+    runSqlShell();
+    
+	return EXIT_SUCCESS;
+}
+
+
+void initializeDbEnvironment(std::string envdir) {
 	DbEnv env(0U);
 	env.set_message_stream(&std::cout);
 	env.set_error_stream(&std::cerr);
@@ -25,9 +94,9 @@ void initializeDbEnvironment() {
 	Db db(&env, 0);
 	db.set_message_stream(env.get_message_stream());
 	db.set_error_stream(env.get_error_stream());
-	db.set_re_len(BLOCK_SZ); // Set record length to 4K
-	db.open(NULL, EXAMPLE, NULL, DB_RECNO, DB_CREATE | DB_TRUNCATE, 0644); // Erases anything already there
-    printf("(cpsc5300: running with database environment at %s)\n", envdir.c_str());
+	db.set_re_len(BLOCK_SZ);
+	db.open(NULL, DB_NAME, NULL, DB_RECNO, DB_CREATE | DB_TRUNCATE, 0644);
+    printf("(sql5300: running with database environment at %s)\n", envdir.c_str());
 }
 
 void printExpression(hsql::Expr* expr, std::stringstream& ss) {
@@ -95,11 +164,6 @@ void printTableRefInfo(hsql::TableRef* table, std::stringstream& ss) {
     }
 }
 
-/**
- * Convert the hyrise ColumnDefinition AST back into the equivalent SQL
- * @param col  column definition to unparse
- * @return     SQL equivalent to *col
- */
 std::string columnDefinitionToString(const hsql::ColumnDefinition *col) {
     std::string ret(col->name);
     switch(col->type) {
@@ -119,11 +183,6 @@ std::string columnDefinitionToString(const hsql::ColumnDefinition *col) {
     return ret;
 }
 
-/**
- * Convert the parser result back into equivalent SQL command string
- * @param result  parser result to unparse
- * @return        SQL equivalent to *result
-*/
 std::string execute(hsql::SQLParserResult* result) {
     std::stringstream ss;
     const hsql::SQLStatement * stmt = result->getStatement(0);
@@ -167,34 +226,16 @@ std::string execute(hsql::SQLParserResult* result) {
 }
 
 void testParseSQLQuery(std::string query, std::string expected) {
-    hsql::SQLParserResult* result;
-    std::cout << "SQL> ";
-    std::cout << query;
-    std::cout << "\n";
+    hsql::SQLParserResult* result = hsql::SQLParser::parseSQLString(query);
 
-    std::string sqlString;
-     
-    result = hsql::SQLParser::parseSQLString(query);
-
-    if (result->isValid()) {
-        sqlString = execute(result);
-    } else if (query != "quit") {
-        std::cout << "Invalid SQL: " << query << '\n';
+    if (result->isValid() && execute(result) != expected) {
+        std::cout << "TEST FAILED\n";
+        std::cout << ">>>> " << expected << "\n"; 
     }
-
     delete result;
-
-    std::cout << "===> " << sqlString << '\n';
-    std::cout << ">>>> " << expected << "\n"; 
-    if (sqlString == expected) {
-        std::cout << "PASSED\n";
-    }
-    std::cout << '\n';
 }
 
-int main(int argc, char *argv[]) {
-    initializeDbEnvironment();
-
+void runTestCases() {
     std::string query;
     std::string expected;
     
@@ -222,7 +263,6 @@ int main(int argc, char *argv[]) {
     expected = "SELECT f.a, g.b, h.c FROM foo AS f JOIN goober AS g ON f.id = g.id WHERE f.z > 1";
     testParseSQLQuery(query, expected);
 
-
     query = "create table foo (a text, b integer, c double)";
     expected = "CREATE TABLE foo (a TEXT, b INT, c DOUBLE)";
     testParseSQLQuery(query, expected);
@@ -230,11 +270,23 @@ int main(int argc, char *argv[]) {
     query = "foo bar blaz";
     expected = "";
     testParseSQLQuery(query, expected);
-
-    query = "quit";
-    expected = "";
-    testParseSQLQuery(query, expected);
-
-	return EXIT_SUCCESS;
 }
 
+void runSqlShell() {
+    hsql::SQLParserResult* result;
+    std::string query;
+    while (query != "quit") {
+        std::cout << "SQL> ";
+        std::getline(std::cin, query);
+        
+        result = hsql::SQLParser::parseSQLString(query);
+        
+        if (result->isValid()) {
+            std::cout << execute(result) << std::endl;
+        } else if (query != "quit") {
+            std::cout << "Invalid SQL: " << query << std::endl;
+        }
+
+        delete result;
+    }
+}
