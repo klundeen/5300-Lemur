@@ -3,6 +3,7 @@
 #include <string.h>
 #include <sstream>
 #include "db_cxx.h"
+#include "heap_storage.h"
 
 // include the sql parser
 #include "SQLParser.h"
