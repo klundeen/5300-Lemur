@@ -7,20 +7,21 @@ LIB_DIR      = $(COURSE)/lib
 SRC 		 = src
 BUILD 		 = build
 INCLUDE		 = include
-OBJS         = $(BUILD)/sql5300.o $(BUILD)/heap_storage.o
-HDRS		 = $(INCLUDE)/heap_storage.h $(INCLUDE)/storage_engine.h
+OBJS         = $(BUILD)/*.o
+HDRS		 = $(INCLUDE)/*.h
+# OBJS         = $(BUILD)/sql5300.o $(BUILD)/heap_storage.o
+# HDRS		 = $(INCLUDE)/heap_storage.h $(INCLUDE)/storage_engine.h
 
-sql5300: sql5300.o heap_storage.o
+sql5300: sql5300.o heap_storage.o SqlShell.o SqlExec.o
 	g++ -L$(LIB_DIR) -o $@ $(OBJS) -ldb_cxx -lsqlparser
 
-sql5300.o : $(HDRS)
+sql5300.o 	: $(HDRS)
 heap_storage.o : $(HDRS)
+SqlShell.o : $(HDRS)
+SqlExec.o : $(HDRS)
 
-# General rule for compilation
 %.o: $(SRC)/%.cpp
 	g++ -I$(INCLUDE_DIR) -I$(INCLUDE) $(CCFLAGS) -o $(BUILD)/$@ $<
 
-# Rule for removing all non-source files (so they can get rebuilt from scratch)
-# Note that since it is not the first target, you have to invoke it explicitly: $ make clean
 clean:
 	rm -f sql5300 $(BUILD)/*.o
