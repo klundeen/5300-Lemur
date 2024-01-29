@@ -1,10 +1,6 @@
 ////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////
 /////////////////////// H E A P - F I L E //////////////////////////////////
-////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////
 #pragma once
@@ -13,17 +9,15 @@
 
 void HeapFile::create(void)
 {
-    printf("HeapFile::create()\n");
-    db_open(DB_CREATE | DB_TRUNCATE);
+    db_open(DB_CREATE | DB_EXCL);
     SlottedPage *page = this->get_new(); // get a new block to start the file
     this->put(page);
+    delete page;
     closed = false;
 }
 
 void HeapFile::drop(void)
 {
-    printf("HeapFile::drop()\n");
-    // open();
     close();
     _DB_ENV->dbremove(NULL, dbfilename.c_str(), NULL, 0);
     last = 0;
@@ -31,18 +25,14 @@ void HeapFile::drop(void)
 
 void HeapFile::open(void)
 {
-    printf("HeapFile::open()\n");
     if (!closed)
         return;
-    db_open(0);
-    DB_BTREE_STAT stat;
-    this->db.stat(nullptr, &stat, DB_FAST_STAT);
-    this->last = stat.bt_ndata;
+    db_open();
+    closed = false;
 }
 
 void HeapFile::close(void)
 {
-    printf("HeapFile::close()\n");
     if (closed)
         return;
     db.close(0);
@@ -77,7 +67,6 @@ SlottedPage *HeapFile::get(BlockID block_id)
 
 void HeapFile::put(DbBlock *block)
 {
-
     BlockID block_id = block->get_block_id();
     Dbt key(&block_id, sizeof(block_id));
 
@@ -95,40 +84,77 @@ BlockIDs *HeapFile::block_ids()
 
 void HeapFile::db_open(uint flags)
 {
-    if (this->dbfilename.empty())
-        this->dbfilename = this->name + ".db";
+    this->db.set_message_stream(_DB_ENV->get_message_stream());
+    this->db.set_error_stream(_DB_ENV->get_error_stream());
+    this->db.set_re_len(DbBlock::BLOCK_SZ);
+
+    this->dbfilename = this->name + ".db";
     db.open(NULL, this->dbfilename.c_str(), NULL, DB_RECNO, flags, 0644);
+
+    DB_BTREE_STAT *stat;
+    this->db.stat(nullptr, &stat, DB_FAST_STAT);
+    uint32_t bt_ndata = stat->bt_ndata;
+    this->last = bt_ndata;
 }
 
-void test_heap_file()
+///////////////////////////////////////////////////////////////////////////////
+///////////////////////////////////////////////////////////////////////////////
+//////////////////////////////// T E S T //////////////////////////////////////
+////////////////////////// H E A P - F I L E //////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+//////////////////////////////////////////////////////////////////////////////
+bool test_heap_file()
 {
-    printf("test_heap_file\n");
     HeapFile file("test_table");
 
     file.create();
-    file.open();
-    assert(file.get_last_block_id() == 1);
-    file.get_new();
-    assert(file.get_last_block_id() == 2);
+    printf("Create file\n");
 
-    SlottedPage *block1 = file.get(1);
+    file.open();
+    printf("Open file\n");
+
+    if (file.get_last_block_id() != 1)
+    {
+        return false;
+    }
+
+    file.get_new();
+    printf("Get new block\n");
+    if (file.get_last_block_id() != 2)
+    {
+        return false;
+    }
+
     SlottedPage *block2 = file.get(2);
+    printf("Get existing block\n");
 
     void *before = malloc(DbBlock::BLOCK_SZ);
-    memcpy(before, file.get(1)->get_data(), DbBlock::BLOCK_SZ);
+    memcpy(before, file.get(1)->get_block(), DbBlock::BLOCK_SZ);
 
-    SlottedPage block1_new(*block2->get_block(), 1, false);
+    SlottedPage block1_new(*block2->get_block(), 1, true);
     char value[] = "cpsc5300";
     Dbt data(&value, sizeof(value));
     block1_new.add(&data);
-    file.put(&block1_new); // put a copy of block2 into block1
-    void *after = file.get(1)->get_data();
-    assert(memcmp(before, after, DbBlock::BLOCK_SZ) != 0);
+    file.put(&block1_new);
+    printf("Put block\n");
+    void *after = file.get(1)->get_block();
+    if (memcmp(before, after, DbBlock::BLOCK_SZ) == 0)
+    {
+        return false;
+    }
 
     BlockIDs *blockIds = file.block_ids();
-    assert(blockIds->size() == 2);
-    delete blockIds;
+    if (blockIds->size() != 2)
+    {
+        return false;
+    }
 
+    delete blockIds;
     file.close();
+    printf("Close file\n");
+
     file.drop();
+    printf("Drop file\n");
+
+    return true;
 }
