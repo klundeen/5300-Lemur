@@ -5,12 +5,14 @@
  */
 #include <stdio.h>
 #include <stdlib.h>
+
+#include <cassert>
 #include <cstring>
 #include <iostream>
 #include <string>
-#include <cassert>
-#include "db_cxx.h"
+
 #include "SQLParser.h"
+#include "db_cxx.h"
 #include "heap_storage.h"
 
 using namespace std;
@@ -24,24 +26,6 @@ using namespace hsql;
 DbEnv *_DB_ENV;
 
 /**
- * Execute an SQL statement (but for now, just spit back the SQL)
- * @param stmt  Hyrise AST for the statement
- * @returns     a string (for now) of the SQL statment
- */
-string execute(const SQLStatement *stmt) {
-    switch (stmt->type()) {
-        case kStmtSelect:
-            return "SELECT...";  // FIXME
-        case kStmtInsert:
-            return "INSERT...";  // FIXME
-        case kStmtCreate:
-			return "CREATE...";  // FIXME
-        default:
-            return "Not implemented";
-    }
-}
-
-/**
  * Main entry point of the sql5300 program
  * @args dbenvpath  the path to the BerkeleyDB database environment
  */
@@ -51,7 +35,8 @@ int main(int argc, char *argv[]) {
         return 1;
     }
     char *envHome = argv[1];
-    cout << "(sql5300: running with database environment at " << envHome << ")" << endl;
+    cout << "(sql5300: running with database environment at " << envHome << ")"
+         << endl;
     DbEnv env(0U);
     env.set_message_stream(&cout);
     env.set_error_stream(&cerr);
@@ -68,16 +53,15 @@ int main(int argc, char *argv[]) {
         cout << "SQL> ";
         string query;
         getline(cin, query);
-        
-        if (query.length() == 0)
-            continue;  
-        
-        if (query == "quit")
-            break; 
+
+        if (query.length() == 0) continue;
+
+        if (query == "quit") break;
 
         if (query == "test") {
             shell.test();
-            cout << "test_heap_storage: " << (test_heap_storage() ? "ok" : "failed") << endl;
+            cout << "test_heap_storage: "
+                 << (test_heap_storage() ? "ok" : "failed") << endl;
             continue;
         }
 

@@ -1,67 +1,43 @@
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-/////////////////////////// H E A P  T A B L E/////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
+/**
+ * @file heap_table.cpp - Implementation of HeapTable class
+*/
 
-HeapTable::HeapTable(Identifier table_name, ColumnNames column_names, ColumnAttributes column_attributes) : DbRelation(table_name, column_names, column_attributes), file(table_name)
-{
-}
+HeapTable::HeapTable(Identifier table_name, ColumnNames column_names,
+                     ColumnAttributes column_attributes)
+    : DbRelation(table_name, column_names, column_attributes),
+      file(table_name) {}
 
-void HeapTable::create()
-{
-    this->file.create();
-}
+void HeapTable::create() { this->file.create(); }
 
-void HeapTable::create_if_not_exists()
-{
-    try
-    {
+void HeapTable::create_if_not_exists() {
+    try {
         this->file.open();
-    }
-    catch (DbException &e)
-    { // DBNoSuchFileError
+    } catch (DbException &e) {  // DBNoSuchFileError
         this->create();
     }
 }
 
-void HeapTable::drop()
-{
-    this->file.drop();
-}
+void HeapTable::drop() { this->file.drop(); }
 
-void HeapTable::open()
-{
-    this->file.open();
-}
+void HeapTable::open() { this->file.open(); }
 
-void HeapTable::close()
-{
-    this->file.close();
-}
+void HeapTable::close() { this->file.close(); }
 
-Handle HeapTable::insert(const ValueDict *row)
-{
+Handle HeapTable::insert(const ValueDict *row) {
     ValueDict *validatedRow = validate(row);
     Handle handle = append(validatedRow);
     delete validatedRow;
     return handle;
 }
 
-void HeapTable::update(const Handle handle, const ValueDict *new_values)
-{
-}
+void HeapTable::update(const Handle handle, const ValueDict *new_values) {}
 
-void HeapTable::del(const Handle handle)
-{
-}
+void HeapTable::del(const Handle handle) {}
 
-Handles *HeapTable::select()
-{
+Handles *HeapTable::select() {
     Handles *handles = new Handles();
     BlockIDs *block_ids = file.block_ids();
-    for (auto const &block_id : *block_ids)
-    {
+    for (auto const &block_id : *block_ids) {
         SlottedPage *block = file.get(block_id);
         RecordIDs *record_ids = block->ids();
         for (auto const &record_id : *record_ids)
@@ -73,18 +49,13 @@ Handles *HeapTable::select()
     return handles;
 }
 
-Handles *HeapTable::select(const ValueDict *where)
-{
-    return nullptr;
-}
+Handles *HeapTable::select(const ValueDict *where) { return nullptr; }
 
-ValueDict *HeapTable::project(Handle handle)
-{
+ValueDict *HeapTable::project(Handle handle) {
     return this->project(handle, &this->column_names);
 }
 
-ValueDict *HeapTable::project(Handle handle, const ColumnNames *column_names)
-{
+ValueDict *HeapTable::project(Handle handle, const ColumnNames *column_names) {
     BlockID blockID = handle.first;
     RecordID recordID = handle.second;
     SlottedPage *page = this->file.get(blockID);
@@ -92,26 +63,23 @@ ValueDict *HeapTable::project(Handle handle, const ColumnNames *column_names)
     ValueDict *row = unmarshal(data);
 
     ValueDict *projectedRow = new ValueDict();
-    for (auto const &columnName : *column_names)
-    {
+    for (auto const &columnName : *column_names) {
         auto search = row->find(columnName);
-        if (search == row->end())
-            throw DbRelationError("Invalid column name");
+        if (search == row->end()) throw DbRelationError("Invalid column name");
         projectedRow->insert({columnName, search->second});
     }
     return projectedRow;
 }
 
-ValueDict *HeapTable::validate(const ValueDict *row)
-{
+ValueDict *HeapTable::validate(const ValueDict *row) {
     std::map<Identifier, ColumnAttribute::DataType> identifierToDataTypeMap;
     for (size_t i = 0; i < this->column_names.size(); i++)
         identifierToDataTypeMap.insert(
-            {this->column_names[i], this->column_attributes[i].get_data_type()});
+            {this->column_names[i],
+             this->column_attributes[i].get_data_type()});
 
     ValueDict *validatedRow = new ValueDict();
-    for (auto const &item : *row)
-    {
+    for (auto const &item : *row) {
         Identifier colName = item.first;
         Value colVal = item.second;
         auto search = identifierToDataTypeMap.find(colName);
@@ -125,30 +93,24 @@ ValueDict *HeapTable::validate(const ValueDict *row)
     return validatedRow;
 }
 
-Handle HeapTable::append(const ValueDict *row)
-{
+Handle HeapTable::append(const ValueDict *row) {
     RecordID recordID = 0;
     SlottedPage *page;
     Dbt *data = this->marshal(row);
     BlockIDs *blockIDs = this->file.block_ids();
-    auto cleanup = [&]()
-    {
+    auto cleanup = [&]() {
         delete page;
         delete data;
         delete blockIDs;
     };
-    for (BlockID &blockID : *blockIDs)
-    {
+    for (BlockID &blockID : *blockIDs) {
         page = this->file.get(blockID);
-        try
-        {
+        try {
             recordID = page->add(data);
             this->file.put(page);
             cleanup();
             return Handle(blockID, recordID);
-        }
-        catch (DbBlockNoRoomError &e)
-        {
+        } catch (DbBlockNoRoomError &e) {
             delete page;
         }
     }
@@ -163,35 +125,30 @@ Handle HeapTable::append(const ValueDict *row)
     return Handle(blockID, recordID);
 }
 
-Dbt *HeapTable::marshal(const ValueDict *row)
-{
+Dbt *HeapTable::marshal(const ValueDict *row) {
     char bytes[DbBlock::BLOCK_SZ];
     uint offset = 0;
     uint col_num = 0;
 
-    for (auto const &column_name : this->column_names)
-    {
+    for (auto const &column_name : this->column_names) {
         ColumnAttribute ca = this->column_attributes[col_num++];
         ValueDict::const_iterator column = row->find(column_name);
         Value value = column->second;
         ColumnAttribute::DataType type = ca.get_data_type();
-        if (type == ColumnAttribute::INT)
-        {
-            auto size = sizeof(value.n); // n is int32_t we want 4 bytes
+        if (type == ColumnAttribute::INT) {
+            auto size = sizeof(value.n);  // n is int32_t we want 4 bytes
             memcpy(bytes + offset, &value.n, size);
             offset += size;
-        }
-        else if (type == ColumnAttribute::TEXT)
-        {
-            auto size = sizeof(u_int16_t); // assume string length fits in 2 bytes (64k)
+        } else if (type == ColumnAttribute::TEXT) {
+            auto size = sizeof(
+                u_int16_t);  // assume string length fits in 2 bytes (64k)
             u_int16_t len = value.s.length();
             memcpy(bytes + offset, &len, size);
             offset += size;
-            memcpy(bytes + offset, value.s.c_str(), len); // assume ascii for now
+            memcpy(bytes + offset, value.s.c_str(),
+                   len);  // assume ascii for now
             offset += len;
-        }
-        else
-        {
+        } else {
             throw DbRelationError("Only supports marshaling INT and TEXT");
         }
     }
@@ -205,27 +162,22 @@ Dbt *HeapTable::marshal(const ValueDict *row)
     return new Dbt(trimmedBytes, offset);
 }
 
-ValueDict *HeapTable::unmarshal(Dbt *data)
-{
+ValueDict *HeapTable::unmarshal(Dbt *data) {
     char *bytes = (char *)data->get_data();
     uint offset = 0;
     uint col_num = 0;
 
     ValueDict *row = new ValueDict();
-    for (auto const &column_name : this->column_names)
-    {
+    for (auto const &column_name : this->column_names) {
         ColumnAttribute ca = this->column_attributes[col_num++];
         auto type = ca.get_data_type();
-        if (type == ColumnAttribute::INT)
-        {
+        if (type == ColumnAttribute::INT) {
             int32_t n;
             auto size = sizeof(int32_t);
             memcpy(&n, bytes + offset, size);
             row->insert({column_name, Value(n)});
             offset += size;
-        }
-        else if (type == ColumnAttribute::TEXT)
-        {
+        } else if (type == ColumnAttribute::TEXT) {
             u_int16_t len;
             auto size = sizeof(u_int16_t);
             memcpy(&len, bytes + offset, size);
@@ -233,9 +185,7 @@ ValueDict *HeapTable::unmarshal(Dbt *data)
             std::string s(bytes + offset, len);
             row->insert({column_name, Value(s)});
             offset += len;
-        }
-        else
-        {
+        } else {
             throw DbRelationError("Only supports unmarshaling INT and TEXT");
         }
     }
@@ -243,15 +193,7 @@ ValueDict *HeapTable::unmarshal(Dbt *data)
     return row;
 }
 
-//////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
-/////////////////////////////// T E S T //////////////////////////////////////
-/////////////////////////// H E A P  T A B L E/////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
-//////////////////////////////////////////////////////////////////////////////
-bool test_heap_table()
-{
-    // test function -- returns true if all tests pass
+bool test_heap_table() {
     ColumnNames column_names;
     column_names.push_back("a");
     column_names.push_back("b");
@@ -281,8 +223,7 @@ bool test_heap_table()
 
     int32_t n = (*result)["a"].n;
     std::string s = (*result)["b"].s;
-    if (n != 12 || s != "Hello!")
-    {
+    if (n != 12 || s != "Hello!") {
         return false;
     }
 
