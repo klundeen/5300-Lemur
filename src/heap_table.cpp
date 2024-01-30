@@ -3,11 +3,6 @@
 /////////////////////////// H E A P  T A B L E/////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
 ////////////////////////////////////////////////////////////////////////////////
-#pragma once
-#include "heap_storage.h"
-#include <cstring>
-
-using namespace std;
 
 HeapTable::HeapTable(Identifier table_name, ColumnNames column_names, ColumnAttributes column_attributes) : DbRelation(table_name, column_names, column_attributes), file(table_name)
 {
@@ -109,7 +104,7 @@ ValueDict *HeapTable::project(Handle handle, const ColumnNames *column_names)
 
 ValueDict *HeapTable::validate(const ValueDict *row)
 {
-    map<Identifier, ColumnAttribute::DataType> identifierToDataTypeMap;
+    std::map<Identifier, ColumnAttribute::DataType> identifierToDataTypeMap;
     for (size_t i = 0; i < this->column_names.size(); i++)
         identifierToDataTypeMap.insert(
             {this->column_names[i], this->column_attributes[i].get_data_type()});
@@ -235,7 +230,7 @@ ValueDict *HeapTable::unmarshal(Dbt *data)
             auto size = sizeof(u_int16_t);
             memcpy(&len, bytes + offset, size);
             offset += size;
-            string s(bytes + offset, len);
+            std::string s(bytes + offset, len);
             row->insert({column_name, Value(s)});
             offset += len;
         }
@@ -285,7 +280,7 @@ bool test_heap_table()
     std::cout << "project ok" << std::endl;
 
     int32_t n = (*result)["a"].n;
-    string s = (*result)["b"].s;
+    std::string s = (*result)["b"].s;
     if (n != 12 || s != "Hello!")
     {
         return false;

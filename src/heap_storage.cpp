@@ -1,7 +1,11 @@
 #include "heap_storage.h"
-#include "slotted_page.cpp"
-#include "heap_file.cpp"
+#include <cstring>
+#include <string>
+#include <map>
+
 #include "heap_table.cpp"
+#include "heap_file.cpp"
+#include "slotted_page.cpp"
 
 bool test_heap_storage()
 {

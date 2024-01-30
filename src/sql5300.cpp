@@ -16,6 +16,8 @@
 using namespace std;
 using namespace hsql;
 
+#include "sql_shell.cpp"
+
 /*
  * we allocate and initialize the _DB_ENV global
  */
@@ -44,8 +46,6 @@ string execute(const SQLStatement *stmt) {
  * @args dbenvpath  the path to the BerkeleyDB database environment
  */
 int main(int argc, char *argv[]) {
-
-    // Open/create the db enviroment
     if (argc != 2) {
         cerr << "Usage: cpsc5300: dbenvpath" << endl;
         return 1;
@@ -62,34 +62,28 @@ int main(int argc, char *argv[]) {
         exit(1);
     }
     _DB_ENV = &env;
-    
-    // Enter the SQL shell loop
+    SqlShell shell;
+
     while (true) {
         cout << "SQL> ";
         string query;
         getline(cin, query);
+        
         if (query.length() == 0)
-            continue;  // blank line -- just skip
+            continue;  
+        
         if (query == "quit")
-            break;  // only way to get out
+            break; 
+
         if (query == "test") {
+            shell.test();
             cout << "test_heap_storage: " << (test_heap_storage() ? "ok" : "failed") << endl;
             continue;
         }
 
-        // use the Hyrise sql parser to get us our AST
-        SQLParserResult *result = SQLParser::parseSQLString(query);
-        if (!result->isValid()) {
-            cout << "invalid SQL: " << query << endl;
-	    	delete result;
-            continue;
-        }
-
-        // execute the statement
-        for (uint i = 0; i < result->size(); ++i) {
-            cout << execute(result->getStatement(i)) << endl;
-        }
-		delete result;
+        string result = shell.run(query);
+        cout << result << endl;
     }
+
     return EXIT_SUCCESS;
 }
