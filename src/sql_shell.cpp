@@ -13,10 +13,9 @@ public:
         string query = "";
         if (result->isValid())
             query = execute(result);
-        {
+        else
             cout << "Invalid SQL: " << statement << "\n";
-        }
-    
+
         delete result;
         return query;
     }
@@ -68,7 +67,7 @@ public:
 private:
     void testParseSQLQuery(string query, string expected)
     {
-        if (SqlShell::run(query) != expected)
+        if (run(query) != expected)
         {
             cout << "TEST FAILED\n";
             cout << ">>>> " << expected << "\n";
