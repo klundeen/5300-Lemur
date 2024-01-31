@@ -1,3 +1,10 @@
+/**
+ * @file heap_file.cpp - Implementation of HeapFile class
+ * Operations: Create, Drop, Open, Close, Get New, Get, Put, Block IDs
+ * @author Duc Vo
+ *
+ * @see "Seattle University, CPSC 5300, Winter Quarter 2024"
+ */
 #include <string.h>
 
 #include <cstring>

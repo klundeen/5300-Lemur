@@ -1,3 +1,9 @@
+/**
+ * @file sql5300.cpp - main entry for the relation manaager's SQL shell
+ * @author Duc Vo
+ * 
+ * @see "Seattle University, CPSC 5300, Winter Quarter 2024"
+ */
 #include "heap_storage.h"
 #include "sql_shell.h"
 

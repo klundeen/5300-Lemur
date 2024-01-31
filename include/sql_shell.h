@@ -1,29 +1,32 @@
-
+/**
+ * @file sql_shell.h - Implementation of SQL Shell to accept user input and
+ * execute SQL commands
+ * 
+ * @author Duc Vo
+ * @see "Seattle University, CPSC5300, Winter Quarter 2024"
+ */
 #pragma once
 #include "SQLParser.h"
 #include "heap_storage.h"
 
 /**
- * SQL Shell to accept user input and execute SQL commands
+ * Initialize database environment, accept user input and execute SQL commands
  * Support SELECT and CREATE statment
+ * @class SqlShell - Implementation of SQL Shell
  */
 class SqlShell {
    public:
     /**
      * Initialize the database environment with the given home directory
      * @param envHome  the home directory of the database
+     * @param env      the database environment to initialize
      */
-    void initializeDbEnv(const char *envHome, DbEnv *env);
+    virtual void initializeDbEnv(const char *envHome, DbEnv *env);
 
     /**
      *  Run SQL Shell to accept user input and execute SQL commands
      */
-    void run();
-
-    /**
-     * Run automatic test on SQL Parser
-     */
-    void testSQLParser();
+    virtual void run();
 
     /**
      * Convert the parser result back into equivalent SQL command string
@@ -31,7 +34,12 @@ class SqlShell {
      * @param result  parser result to unparse
      * @return        SQL equivalent to *result
      */
-    std::string execute(const hsql::SQLStatement *stmt);
+    virtual std::string execute(const hsql::SQLStatement *stmt);
+
+    /**
+     * Run automatic test on SQL Parser
+     */
+    void testSQLParser();
 
    private:
     static bool initialized;

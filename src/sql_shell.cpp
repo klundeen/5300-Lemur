@@ -1,3 +1,10 @@
+/**
+ * @file sql_shell.cpp - Implementation of SQL Shell to initialize database
+ * enviroment, accept user input and execute SQL commands
+ * @author Duc Vo
+ *
+ * @see "Seattle University, CPSC 5300, Winter Quarter 2024"
+ */
 #include "sql_shell.h"
 
 #include <stdio.h>

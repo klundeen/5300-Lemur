@@ -1,3 +1,11 @@
+/**
+ * @file slotted_page.cpp - Implementation of SlottedPage class
+ * Operations: Add, Get, Put, Delete, IDs, Has Room, Slide, Get N, Put N,
+ * Address, Put Header, Get Header
+ * @author Duc Vo
+ *
+ * @see "Seattle University, CPSC 5300, Winter Quarter 2024"
+ */
 #include <cstring>
 
 #include "heap_storage.h"

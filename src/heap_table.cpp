@@ -1,3 +1,10 @@
+/**
+ * @file heap_table.cpp - Implementation of HeapTable class
+ * Operations: Create, Drop, Open, Close, Insert, Update, Delete,
+ * Select, Project
+ *
+ * @see "Seattle University, CPSC 5300, Winter Quarter 2024"
+ */
 #include <cstring>
 
 #include "heap_storage.h"
@@ -225,8 +232,8 @@ bool test_heap_table() {
     ValueDict *result = table.project((*handles)[0]);
     std::cout << "Table Projection OK" << std::endl;
 
-    delete handles;    
-    
+    delete handles;
+
     int32_t n = (*result)["a"].n;
     std::string s = (*result)["b"].s;
     if (n != 12 || s != "Hello!") return false;
