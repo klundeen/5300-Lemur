@@ -34,6 +34,9 @@
 # IDEs
 .vscode
 
+# Compiled files
+sql5300
+
 # Miscellaneous
 data/
 build/
