@@ -1,3 +1,5 @@
+#pragma once
+
 /**
  * @file heap_storage.h - Implementation of storage_engine with a heap file structure.
  * SlottedPage: DbBlock
@@ -11,6 +13,7 @@
 
 #include "db_cxx.h"
 #include "storage_engine.h"
+
 
 /**
  * @class SlottedPage - heap file implementation of DbBlock.
@@ -176,5 +179,6 @@ protected:
 };
 
 bool test_heap_storage();
-
-
+bool test_slotted_page();
+bool test_heap_table();
+bool test_heap_file();

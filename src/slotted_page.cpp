@@ -1,6 +1,6 @@
-/**
- * @file slotted_page.cpp - Implementation of SlottedPage class
-*/
+#include <cstring>
+
+#include "heap_storage.h"
 
 SlottedPage::SlottedPage(Dbt &block, BlockID block_id, bool is_new)
     : DbBlock(block, block_id, is_new) {
@@ -149,12 +149,6 @@ void SlottedPage::get_header(u_int16_t &size, u_int16_t &loc, RecordID id) {
     loc = get_n(4 * id + 2);
 }
 
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-/////////////////////////////// T E S T ////////////////////////////////////////
-/////////////////////// S L O T T E D  - P A G E ///////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
-////////////////////////////////////////////////////////////////////////////////
 Dbt create_dbt(u_int16_t len);
 bool test_slotted_page() {
     // Initialize SlottedPage
@@ -209,7 +203,7 @@ bool test_slotted_page() {
         return false;
     }
     printf("Records: ");
-    u_int32_t expected_sizes[] = {-1, 42, 0, 50, 18, 77};
+    u_int32_t expected_sizes[] = {0, 42, 0, 50, 18, 77};
     for (RecordID &id : *recordIDs) {
         printf("[%d:%d]", id, page.get(id)->get_size());
         if (page.get(id)->get_size() != expected_sizes[id]) {

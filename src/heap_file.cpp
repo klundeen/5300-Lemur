@@ -1,7 +1,13 @@
-/**
- * @file heap_file.cpp - implementation of HeapFile
- * @author Duc Vo
-*/
+#include <string.h>
+
+#include <cstring>
+
+#include "db_cxx.h"
+#include "heap_storage.h"
+
+DbEnv *_DB_ENV;
+const char *EXAMPLE = "example";
+const unsigned int BLOCK_SZ = 4096;
 
 void HeapFile::create(void) {
     db_open(DB_CREATE | DB_EXCL);
@@ -83,10 +89,8 @@ void HeapFile::db_open(uint flags) {
     this->last = bt_ndata;
 }
 
-
 bool test_heap_file() {
-    HeapFile file("test_table");
-
+    HeapFile file(EXAMPLE);
     file.create();
     printf("Create file\n");
 

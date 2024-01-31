@@ -1,6 +1,6 @@
-/**
- * @file heap_table.cpp - Implementation of HeapTable class
-*/
+#include <cstring>
+
+#include "heap_storage.h"
 
 HeapTable::HeapTable(Identifier table_name, ColumnNames column_names,
                      ColumnAttributes column_attributes)

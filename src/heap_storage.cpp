@@ -1,16 +1,8 @@
-/**
- * @file heap_storage.cpp - Test driver for heap_storage
- * @author Duc Vo
- */
+
 #include "heap_storage.h"
 
-#include <cstring>
-#include <map>
-#include <string>
-
-#include "heap_file.cpp"
-#include "heap_table.cpp"
-#include "slotted_page.cpp"
+#include <stdio.h>
+#include <stdlib.h>
 
 bool test_heap_storage() {
     char s[] = "==============================";
