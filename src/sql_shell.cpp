@@ -44,9 +44,10 @@ void SqlShell::run() {
         if (query.length() == 0) continue;
         if (query == "quit") break;
         if (query == "test") {
-            printf("test_sql_parser: ");
+            printf("\nTESTING SQL PARSER...\n");
             this->testSQLParser();
-            printf("test_heap_storage: %s\n",
+            printf("\nTESTING HEAP STORAGE CLASSES\n");
+            printf("\nHEAP STORAGE TEST: %s\n",
                    (test_heap_storage() ? "OK" : "FAILED"));
             continue;
         }
@@ -104,7 +105,6 @@ string SqlShell::execute(const hsql::SQLStatement *stmt) {
 }
 
 void SqlShell::testSQLParser() {
-    printf("Testing SQL Parser\n");
     string query;
     string expected;
 
@@ -241,10 +241,10 @@ void SqlShell::testParseSQLQuery(string query, string expected) {
     } else {
         for (uint i = 0; i < result->size(); ++i) {
             const SQLStatement *stmt = result->getStatement(i);
-            string query = execute(stmt);
+            string res = execute(stmt);
             printf("SQL> %s\n", query.c_str());
-            printf(">>>> %s\n", expected.c_str());
-            if (query != expected) printf("TEST FAILED\n");
+            printf(">>>> %s\n", res.c_str());
+            if (res != expected) printf("TEST FAILED\n");
         }
     }
     delete result;
