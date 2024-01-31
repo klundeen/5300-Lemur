@@ -1,5 +1,5 @@
+CCFLAGS    		= -std=c++11 -c -g
 CCFLAGS     	= -std=c++11 -std=c++0x -Wall -Wno-c++11-compat -DHAVE_CXX_STDHEADERS -D_GNU_SOURCE -D_REENTRANT -O3 -c -ggdb
-CCFLAGS    		= -std=c++11 -c 
 INCLUDE_DIR 	= /usr/local/db6/include
 LIB_DIR     	= /usr/local/db6/lib
 

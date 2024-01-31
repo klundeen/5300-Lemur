@@ -13,7 +13,7 @@ class SqlShell {
      * Initialize the database environment with the given home directory
      * @param envHome  the home directory of the database
      */
-    void initializeDbEnv(const char *envHome);
+    void initializeDbEnv(const char *envHome, DbEnv *env);
 
     /**
      *  Run SQL Shell to accept user input and execute SQL commands
@@ -34,6 +34,8 @@ class SqlShell {
     std::string execute(const hsql::SQLStatement *stmt);
 
    private:
+    static bool initialized;
+
     void printExpression(hsql::Expr *expr, std::stringstream &ss);
 
     void printTableRefInfo(hsql::TableRef *table, std::stringstream &ss);

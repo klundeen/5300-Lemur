@@ -149,8 +149,13 @@ void SlottedPage::get_header(u_int16_t &size, u_int16_t &loc, RecordID id) {
     loc = get_n(4 * id + 2);
 }
 
-Dbt create_dbt(u_int16_t len);
 bool test_slotted_page() {
+    auto createDbt = [](u_int16_t len) {
+        char bytes[len];
+        Dbt data(&bytes, len);
+        return data;
+    };
+
     // Initialize SlottedPage
     char bytes[DbBlock::BLOCK_SZ];
     memset(bytes, 0, sizeof(bytes));
@@ -158,15 +163,15 @@ bool test_slotted_page() {
     SlottedPage page(block, 1, true);
 
     // Test Addition
-    Dbt data = create_dbt(42);
+    Dbt data = createDbt(42);
     page.add(&data);
     printf("Insert record #1 of size 42\n");
 
-    data = create_dbt(100);
+    data = createDbt(100);
     RecordID id2 = page.add(&data);
     printf("Insert record #2 of size 100\n");
 
-    data = create_dbt(59);
+    data = createDbt(59);
     RecordID id3 = page.add(&data);
     printf("Insert record #3 of size 59\n");
 
@@ -174,21 +179,21 @@ bool test_slotted_page() {
     page.del(id2);
     printf("Delete record #2\n");
 
-    data = create_dbt(14);
+    data = createDbt(14);
     RecordID id4 = page.add(&data);
     printf("Insert record #4 of size 14\n");
 
-    data = create_dbt(77);
+    data = createDbt(77);
     page.add(&data);
     printf("Insert record #5 of size 77\n");
 
     // Test Update (shrink)
-    data = create_dbt(50);
+    data = createDbt(50);
     page.put(id3, data);
     printf("Update record #3 changing size to 50\n");
 
     // Test Update (expand)
-    data = create_dbt(18);
+    data = createDbt(18);
     page.put(id4, data);
     printf("Update record #4 changing size to 18\n");
 
@@ -198,15 +203,19 @@ bool test_slotted_page() {
         return false;
     };
 
-    Dbt *tombstone_record = page.get(id2);
-    if (tombstone_record->get_size() != 0) {
+    Dbt *tombstoneRecord = page.get(id2);
+    if (tombstoneRecord->get_size() != 0) {
         return false;
     }
+    delete tombstoneRecord;
     printf("Records: ");
     u_int32_t expected_sizes[] = {0, 42, 0, 50, 18, 77};
     for (RecordID &id : *recordIDs) {
-        printf("[%d:%d]", id, page.get(id)->get_size());
-        if (page.get(id)->get_size() != expected_sizes[id]) {
+        Dbt *record = page.get(id);
+        u_int32_t recordSize = record->get_size();
+        delete record;
+        printf("[%d:%d]", id, recordSize);
+        if (recordSize != expected_sizes[id]) {
             return false;
         }
     }
@@ -215,10 +224,4 @@ bool test_slotted_page() {
     delete recordIDs;
 
     return true;
-}
-
-Dbt create_dbt(u_int16_t len) {
-    char bytes[len];
-    Dbt data(&bytes, len);
-    return data;
 }

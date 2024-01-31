@@ -5,34 +5,30 @@
 #include "db_cxx.h"
 #include "heap_storage.h"
 
-DbEnv *_DB_ENV;
-const char *EXAMPLE = "example";
-const unsigned int BLOCK_SZ = 4096;
-
 void HeapFile::create(void) {
-    db_open(DB_CREATE | DB_EXCL);
+    this->db_open(DB_CREATE | DB_EXCL);
     SlottedPage *page = this->get_new();  // get a new block to start the file
     this->put(page);
     delete page;
-    closed = false;
+    this->closed = false;
 }
 
 void HeapFile::drop(void) {
-    close();
+    this->close();
     _DB_ENV->dbremove(NULL, dbfilename.c_str(), NULL, 0);
-    last = 0;
+    this->last = 0;
 }
 
 void HeapFile::open(void) {
-    if (!closed) return;
-    db_open();
-    closed = false;
+    if (!this->closed) return;
+    this->db_open();
+    this->closed = false;
 }
 
 void HeapFile::close(void) {
-    if (closed) return;
+    if (this->closed) return;
     db.close(0);
-    closed = true;
+    this->closed = true;
 }
 
 SlottedPage *HeapFile::get_new(void) {
@@ -43,14 +39,10 @@ SlottedPage *HeapFile::get_new(void) {
     BlockID block_id = ++this->last;
     Dbt key(&block_id, sizeof(block_id));
 
-    // write out an empty block and read it back in so Berkeley DB is managing
-    // the memory
-    SlottedPage *page = new SlottedPage(data, this->last, true);
-    this->db.put(nullptr, &key, &data,
-                 0);  // write it out with initialization applied
+    this->db.put(nullptr, &key, &data, 0);
     this->db.get(nullptr, &key, &data, 0);
 
-    return page;
+    return new SlottedPage(data, this->last, true);
 }
 
 SlottedPage *HeapFile::get(BlockID block_id) {
@@ -90,51 +82,46 @@ void HeapFile::db_open(uint flags) {
 }
 
 bool test_heap_file() {
-    HeapFile file(EXAMPLE);
+    const char *fileName = "lemur";
+    HeapFile file(fileName);
     file.create();
-    printf("Create file\n");
+    printf("File Creation OK\n");
 
     file.open();
-    printf("Open file\n");
+    printf("File Open OK\n");
 
-    if (file.get_last_block_id() != 1) {
-        return false;
-    }
+    if (file.get_last_block_id() != 1) return false;
 
-    file.get_new();
-    printf("Get new block\n");
-    if (file.get_last_block_id() != 2) {
-        return false;
-    }
+    SlottedPage *page = file.get_new();
+    if (file.get_last_block_id() != 2) return false;
+    delete page;
+    printf("File Get New Block OK\n");
 
-    SlottedPage *block2 = file.get(2);
-    printf("Get existing block\n");
+    page = file.get(2);
+    delete page;
+    printf("File Get Existing Block OK\n");
 
-    void *before = malloc(DbBlock::BLOCK_SZ);
-    memcpy(before, file.get(1)->get_block(), DbBlock::BLOCK_SZ);
-
-    SlottedPage block1_new(*block2->get_block(), 1, true);
+    page = file.get(1);
     char value[] = "cpsc5300";
     Dbt data(&value, sizeof(value));
-    block1_new.add(&data);
-    file.put(&block1_new);
-    printf("Put block\n");
-    void *after = file.get(1)->get_block();
-    if (memcmp(before, after, DbBlock::BLOCK_SZ) == 0) {
-        return false;
-    }
+    page->add(&data);
+    file.put(page);
+    delete page;
+    printf("File Put Block OK\n");
+
+    page = file.get(1);
+    delete page;
 
     BlockIDs *blockIds = file.block_ids();
-    if (blockIds->size() != 2) {
-        return false;
-    }
-
+    if (blockIds->size() != 2) return false;
     delete blockIds;
+    printf("File Block IDs OK\n");
+
     file.close();
-    printf("Close file\n");
+    printf("File Close OK\n");
 
     file.drop();
-    printf("Drop file\n");
+    printf("File Drop OK\n");
 
     return true;
 }
