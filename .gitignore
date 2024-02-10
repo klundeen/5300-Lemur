@@ -37,6 +37,9 @@
 # Compiled files
 sql5300
 
+# Logs
+*.log
+
 # Miscellaneous
 data/
 build/

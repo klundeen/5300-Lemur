@@ -37,6 +37,8 @@ RecordID SlottedPage::add(const Dbt *data) {
 Dbt *SlottedPage::get(RecordID record_id) {
     u_int16_t size, loc;
     get_header(size, loc, record_id);
+    if (loc == 0)
+        return nullptr;  // this is just a tombstone, record has been deleted
     return new Dbt(this->address(loc), size);
 }
 
