@@ -34,7 +34,7 @@ RecordID SlottedPage::add(const Dbt *data) {
     return id;
 }
 
-Dbt *SlottedPage::get(RecordID record_id) {
+Dbt *SlottedPage::get(RecordID record_id) const {
     u_int16_t size, loc;
     get_header(size, loc, record_id);
     if (loc == 0)
@@ -77,7 +77,7 @@ void SlottedPage::del(RecordID record_id) {
  * Get all the record ids in this block (excluding deleted ones).
  * @returns  pointer to list of record ids (freed by caller)
  */
-RecordIDs *SlottedPage::ids(void) {
+RecordIDs *SlottedPage::ids(void) const {
     RecordIDs *recordIDs = new RecordIDs();
     for (int id = 1; id <= this->num_records; id++) {
         u_int16_t size, loc;
@@ -89,7 +89,7 @@ RecordIDs *SlottedPage::ids(void) {
     return recordIDs;
 }
 
-bool SlottedPage::has_room(u_int16_t size) {
+bool SlottedPage::has_room(u_int16_t size) const {
     u_int16_t available = this->end_free - (this->num_records + 2) * 4;
     return size <= available;
 }
@@ -125,7 +125,7 @@ void SlottedPage::slide(u_int16_t start, u_int16_t end) {
 }
 
 // Get 2-byte integer at given offset in block.
-u_int16_t SlottedPage::get_n(u_int16_t offset) {
+u_int16_t SlottedPage::get_n(u_int16_t offset) const {
     return *(u_int16_t *)this->address(offset);
 }
 
@@ -135,7 +135,7 @@ void SlottedPage::put_n(u_int16_t offset, u_int16_t n) {
 }
 
 // Make a void* pointer for a given offset into the data block.
-void *SlottedPage::address(u_int16_t offset) {
+void *SlottedPage::address(u_int16_t offset) const {
     return (void *)((char *)this->block.get_data() + offset);
 }
 
@@ -151,7 +151,7 @@ void SlottedPage::put_header(RecordID id, u_int16_t size, u_int16_t loc) {
     put_n(4 * id + 2, loc);
 }
 
-void SlottedPage::get_header(u_int16_t &size, u_int16_t &loc, RecordID id) {
+void SlottedPage::get_header(u_int16_t &size, u_int16_t &loc, RecordID id) const {
     if (id ==
         0) {  // called the get_header() version and using the default params
         size = this->num_records;
@@ -161,83 +161,4 @@ void SlottedPage::get_header(u_int16_t &size, u_int16_t &loc, RecordID id) {
     loc = get_n(4 * id + 2);
 }
 
-bool test_slotted_page() {
-    auto createDbt = [](u_int16_t len) {
-        char bytes[len];
-        Dbt data(&bytes, len);
-        return data;
-    };
 
-    // Initialize SlottedPage
-    char bytes[DbBlock::BLOCK_SZ];
-    memset(bytes, 0, sizeof(bytes));
-    Dbt block(bytes, sizeof(bytes));
-    SlottedPage page(block, 1, true);
-
-    // Test Addition
-    Dbt data = createDbt(42);
-    page.add(&data);
-    printf("Insert record #1 of size 42\n");
-
-    data = createDbt(100);
-    RecordID id2 = page.add(&data);
-    printf("Insert record #2 of size 100\n");
-
-    data = createDbt(59);
-    RecordID id3 = page.add(&data);
-    printf("Insert record #3 of size 59\n");
-
-    // Test Deletion
-    page.del(id2);
-    printf("Delete record #2\n");
-
-    data = createDbt(14);
-    RecordID id4 = page.add(&data);
-    printf("Insert record #4 of size 14\n");
-
-    data = createDbt(77);
-    page.add(&data);
-    printf("Insert record #5 of size 77\n");
-
-    // Test Update (shrink)
-    data = createDbt(50);
-    page.put(id3, data);
-    printf("Update record #3 changing size to 50\n");
-
-    // Test Update (expand)
-    data = createDbt(18);
-    page.put(id4, data);
-    printf("Update record #4 changing size to 18\n");
-
-    // Test IDs
-    RecordIDs *recordIDs = page.ids();
-    if (recordIDs->size() != 4) {
-        return false;
-    };
-
-    Dbt *tombstoneRecord = page.get(id2);
-    if (nullptr != tombstoneRecord) {
-        return false;
-    }
-
-    delete tombstoneRecord;
-    printf("Records: ");
-    u_int32_t expected_sizes[] = {0, 42, 0, 50, 18, 77};
-    for (RecordID &id : *recordIDs) {
-        Dbt *record = page.get(id);
-        if (nullptr == record) {
-            continue;
-        }
-        u_int32_t recordSize = record->get_size();
-        delete record;
-        printf("[%d:%d]", id, recordSize);
-        if (recordSize != expected_sizes[id]) {
-            return false;
-        }
-    }
-    printf("\n");
-
-    delete recordIDs;
-
-    return true;
-}

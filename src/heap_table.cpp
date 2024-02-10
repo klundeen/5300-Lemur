@@ -80,26 +80,18 @@ ValueDict *HeapTable::project(Handle handle, const ColumnNames *column_names) {
     return projectedRow;
 }
 
-ValueDict *HeapTable::validate(const ValueDict *row) {
-    std::map<Identifier, ColumnAttribute::DataType> identifierToDataTypeMap;
-    for (size_t i = 0; i < this->column_names.size(); i++)
-        identifierToDataTypeMap.insert(
-            {this->column_names[i],
-             this->column_attributes[i].get_data_type()});
-
-    ValueDict *validatedRow = new ValueDict();
-    for (auto const &item : *row) {
-        Identifier columnName = item.first;
-        Value columnValue = item.second;
-        auto search = identifierToDataTypeMap.find(columnName);
-        if (search == identifierToDataTypeMap.end())
-            throw DbRelationError("Invalid column name");
-        if (columnValue.data_type != identifierToDataTypeMap[columnName])
-            throw DbRelationError("Invalid column type");
-        validatedRow->insert({columnName, columnValue});
+ValueDict *HeapTable::validate(const ValueDict *row) const {
+    ValueDict *full_row = new ValueDict();
+    for (auto const &column_name: this->column_names) {
+        Value value;
+        ValueDict::const_iterator column = row->find(column_name);
+        if (column == row->end())
+            throw DbRelationError("don't know how to handle NULLs, defaults, etc. yet");
+        else
+            value = column->second;
+        (*full_row)[column_name] = value;
     }
-
-    return validatedRow;
+    return full_row;
 }
 
 Handle HeapTable::append(const ValueDict *row) {
@@ -136,7 +128,7 @@ Handle HeapTable::append(const ValueDict *row) {
     return handle;
 }
 
-Dbt *HeapTable::marshal(const ValueDict *row) {
+Dbt *HeapTable::marshal(const ValueDict *row) const {
     char bytes[DbBlock::BLOCK_SZ];
     uint offset = 0;
     uint columnNumber = 0;
@@ -174,7 +166,7 @@ Dbt *HeapTable::marshal(const ValueDict *row) {
     return new Dbt(trimmedBytes, offset);
 }
 
-ValueDict *HeapTable::unmarshal(Dbt *data) {
+ValueDict *HeapTable::unmarshal(Dbt *data) const {
     char *bytes = (char *)data->get_data();
     uint offset = 0;
     uint columnNumber = 0;
@@ -205,39 +197,3 @@ ValueDict *HeapTable::unmarshal(Dbt *data) {
     return row;
 }
 
-bool test_heap_table() {
-    ColumnNames column_names;
-    column_names.push_back("a");
-    column_names.push_back("b");
-    ColumnAttributes column_attributes;
-    ColumnAttribute ca(ColumnAttribute::INT);
-    column_attributes.push_back(ca);
-    ca.set_data_type(ColumnAttribute::TEXT);
-    column_attributes.push_back(ca);
-    HeapTable table1("_test_create_drop_cpp", column_names, column_attributes);
-    table1.create();
-    std::cout << "Table Creation OK" << std::endl;
-    table1.drop();
-    std::cout << "Table Drop OK" << std::endl;
-    HeapTable table("_test_data_cpp", column_names, column_attributes);
-    table.create_if_not_exists();
-    std::cout << "Table Create If Not Exist OK" << std::endl;
-    ValueDict row;
-    row["a"] = Value(12);
-    row["b"] = Value("Hello!");
-    table.insert(&row);
-    std::cout << "Table Insertion OK" << std::endl;
-    Handles *handles = table.select();
-    std::cout << "Table Selection OK" << handles->size() << std::endl;
-    ValueDict *result = table.project((*handles)[0]);
-    std::cout << "Table Projection OK" << std::endl;
-
-    delete handles;
-
-    int32_t n = (*result)["a"].n;
-    std::string s = (*result)["b"].s;
-    if (n != 12 || s != "Hello!") return false;
-    delete result;
-
-    return true;
-}

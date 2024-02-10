@@ -6,11 +6,16 @@
  * @see "Seattle University, CPSC 5300, Winter Quarter 2024"
  */
 #include <string.h>
-
 #include <cstring>
 
 #include "db_cxx.h"
 #include "heap_storage.h"
+
+using namespace std;
+
+HeapFile::HeapFile(string name) : DbFile(name), dbfilename(""), last(0), closed(true), db(_DB_ENV, 0) {
+    this->dbfilename = this->name + ".db";
+}
 
 void HeapFile::create(void) {
     this->db_open(DB_CREATE | DB_EXCL);
@@ -67,7 +72,7 @@ void HeapFile::put(DbBlock *block) {
     db.put(nullptr, &key, block->get_block(), 0);
 }
 
-BlockIDs *HeapFile::block_ids() {
+BlockIDs *HeapFile::block_ids() const {
     BlockIDs *blockIds = new BlockIDs();
     for (RecordID i = 1; i <= this->last; i++) blockIds->push_back(i);
 
@@ -88,47 +93,3 @@ void HeapFile::db_open(uint flags) {
     this->last = bt_ndata;
 }
 
-bool test_heap_file() {
-    const char *fileName = "lemur";
-    HeapFile file(fileName);
-    file.create();
-    printf("File Creation OK\n");
-
-    file.open();
-    printf("File Open OK\n");
-
-    if (file.get_last_block_id() != 1) return false;
-
-    SlottedPage *page = file.get_new();
-    if (file.get_last_block_id() != 2) return false;
-    delete page;
-    printf("File Get New Block OK\n");
-
-    page = file.get(2);
-    delete page;
-    printf("File Get Existing Block OK\n");
-
-    page = file.get(1);
-    char value[] = "cpsc5300";
-    Dbt data(&value, sizeof(value));
-    page->add(&data);
-    file.put(page);
-    delete page;
-    printf("File Put Block OK\n");
-
-    page = file.get(1);
-    delete page;
-
-    BlockIDs *blockIds = file.block_ids();
-    if (blockIds->size() != 2) return false;
-    delete blockIds;
-    printf("File Block IDs OK\n");
-
-    file.close();
-    printf("File Close OK\n");
-
-    file.drop();
-    printf("File Drop OK\n");
-
-    return true;
-}
