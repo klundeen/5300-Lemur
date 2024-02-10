@@ -1,5 +1,5 @@
 /**
- * @file: heap_storage.cpp - Test entry points for HeapFile, HeapTable, and SlottedPage
+ * @file: test_heap_storage.cpp - Test entry points for HeapFile, HeapTable, and SlottedPage
  * @author Duc Vo
  * 
  * @see "Seattle University, CPSC 5300, Winter Quarter 2024"

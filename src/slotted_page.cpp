@@ -104,10 +104,10 @@ bool SlottedPage::has_room(u_int16_t size) {
  * is a left shift (end < start).
  */
 void SlottedPage::slide(u_int16_t start, u_int16_t end) {
-    // start 294, end 290
-    // shift = -4
     int16_t shift = end - start;
-    if (shift == 0) return;
+    if (shift == 0) {
+        return;
+    }
 
     u_int16_t data_loc = this->end_free + 1;
     memmove(this->address(data_loc + shift), address(data_loc), abs(shift));
@@ -115,7 +115,9 @@ void SlottedPage::slide(u_int16_t start, u_int16_t end) {
     for (RecordID &id : *ids) {
         u_int16_t size, loc;
         this->get_header(size, loc, id);
-        if (loc <= start) this->put_header(id, size, loc + shift);
+        if (loc <= start) {
+            this->put_header(id, size, loc + shift);
+        }
     }
     delete ids;
     this->end_free += shift;
@@ -214,14 +216,18 @@ bool test_slotted_page() {
     };
 
     Dbt *tombstoneRecord = page.get(id2);
-    if (tombstoneRecord->get_size() != 0) {
+    if (nullptr != tombstoneRecord) {
         return false;
     }
+
     delete tombstoneRecord;
     printf("Records: ");
     u_int32_t expected_sizes[] = {0, 42, 0, 50, 18, 77};
     for (RecordID &id : *recordIDs) {
         Dbt *record = page.get(id);
+        if (nullptr == record) {
+            continue;
+        }
         u_int32_t recordSize = record->get_size();
         delete record;
         printf("[%d:%d]", id, recordSize);

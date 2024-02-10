@@ -14,7 +14,6 @@ OBJS_PATH  	= $(addprefix $(BUILD)/, $(OBJS))
 
 sql5300: mkdir_build $(OBJS)
 	g++ -L$(LIB_DIR) -o $@ $(OBJS_PATH) -ldb_cxx -lsqlparser
-	rm -rf $(BUILD)
 
 sql5300.o 	: $(HDRS_PATH)
 heap_storage.o 	: $(HDRS_PATH)

@@ -101,7 +101,7 @@ SQL> quit
     │   └── storage_engine.h    # declarations for DbBlock, DbFile, DbRelation
     ├── src		                # source files directory
     │   ├── heap_file.cpp	    # heap file implementation
-    │   ├── heap_storage.cpp	# test driver for heap storage
+    │   ├── test_heap_storage.cpp	# test driver for heap storage
     │   ├── heap_table.cpp	    # heap table implementation
     │   ├── slotted_page.cpp	# slotted page implementation
     │   ├── sql_shell.cpp	    # sql shell implementation
