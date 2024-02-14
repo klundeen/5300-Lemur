@@ -12,9 +12,9 @@
 /**
  * Initialize database environment, accept user input and execute SQL commands
  * Support SELECT and CREATE statment
- * @class SqlShell - Implementation of SQL Shell
+ * @class SQLShell - Implementation of SQL Shell
  */
-class SqlShell {
+class SQLShell {
    public:
     /**
      * Initialize the database environment with the given home directory

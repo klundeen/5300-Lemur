@@ -17,9 +17,9 @@
 using namespace std;
 using namespace hsql;
 
-bool SqlShell::initialized = false;
+bool SQLShell::initialized = false;
 
-void SqlShell::initializeDbEnv(const char *envHome, DbEnv *env) {
+void SQLShell::initializeDbEnv(const char *envHome, DbEnv *env) {
     if (this->initialized) {
         cerr << "(sql5300: database environment already initialized) \n";
         return;
@@ -37,7 +37,7 @@ void SqlShell::initializeDbEnv(const char *envHome, DbEnv *env) {
     printf("(sql5300: running with database environment at %s)\n", envHome);
 }
 
-void SqlShell::run() {
+void SQLShell::run() {
     while (true) {
         printf("SQL> ");
         string query;
@@ -65,16 +65,16 @@ void SqlShell::run() {
     }
 }
 
-string SqlShell::execute(const SQLStatement *stmt) {
+string SQLShell::execute(const SQLStatement *stmt) {
     // outsource execute to SQLExec
-    // could refactor this so that we don't even need to have SqlShell::Exec at all
+    // could refactor this so that we don't even need to have SQLShell::Exec at all
     SQLExec *sql_exec = new SQLExec();
     QueryResult *result = sql_exec->execute(stmt);
     return result->get_message();
 }
 
 //
-void SqlShell::printExpression(Expr *expr, stringstream &ss) {
+void SQLShell::printExpression(Expr *expr, stringstream &ss) {
     switch (expr->type) {
         case kExprStar:
             ss << "*";
@@ -109,7 +109,7 @@ void SqlShell::printExpression(Expr *expr, stringstream &ss) {
     }
 }
 
-void SqlShell::printTableRefInfo(TableRef *table, stringstream &ss) {
+void SQLShell::printTableRefInfo(TableRef *table, stringstream &ss) {
     switch (table->type) {
         case kTableSelect:
             break;
@@ -142,7 +142,7 @@ void SqlShell::printTableRefInfo(TableRef *table, stringstream &ss) {
 }
 
 // remove?
-string SqlShell::columnDefinitionToString(const ColumnDefinition *col) {
+string SQLShell::columnDefinitionToString(const ColumnDefinition *col) {
     string ret(col->name);
     switch (col->type) {
         case ColumnDefinition::DOUBLE:
@@ -161,7 +161,7 @@ string SqlShell::columnDefinitionToString(const ColumnDefinition *col) {
     return ret;
 }
 
-void SqlShell::testParseSQLQuery(string query, string expected) {
+void SQLShell::testParseSQLQuery(string query, string expected) {
     SQLParserResult *result = SQLParser::parseSQLString(query);
     if (!result->isValid()) {
         printf("SQL> %s\n", query.c_str());
@@ -179,7 +179,7 @@ void SqlShell::testParseSQLQuery(string query, string expected) {
 }
 
 // Tests are broken for now
-void SqlShell::testSQLParser() {
+void SQLShell::testSQLParser() {
     string query;
     string expected;
 
