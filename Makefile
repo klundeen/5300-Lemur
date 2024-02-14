@@ -7,7 +7,7 @@ SRC 		= ./src
 BUILD 		= ./build
 INCLUDE		= ./include
 
-OBJS       	= sql5300.o slotted_page.o heap_table.o heap_file.o sql_shell.o schema_tables.o parse_tree_to_string.o test_heap_storage.o 
+OBJS       	= sql5300.o slotted_page.o heap_table.o heap_file.o sql_shell.o sql_exec.o schema_tables.o parse_tree_to_string.o test_heap_storage.o
 HDRS	   	= heap_storage.h heap_table.h heap_file.h slotted_page.h storage_engine.h debug.h schema_tables.h parse_tree_to_string.h
 HDRS_PATH  	= $(addprefix $(INCLUDE)/, $(HDRS))
 OBJS_PATH  	= $(addprefix $(BUILD)/, $(OBJS))
@@ -21,6 +21,7 @@ slotted_page.o 			: $(HDRS_PATH)
 heap_table.o 			: $(HDRS_PATH)
 heap_file.o 			: $(HDRS_PATH)
 sql_shell.o 			: $(HDRS_PATH)
+sql_exec.o 				: $(HDRS_PATH)
 schema_tables.o			: $(HDRS_PATH)
 parse_tree_to_string.o	: $(HDRS_PATH)
 

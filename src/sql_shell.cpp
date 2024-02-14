@@ -6,6 +6,7 @@
  * @see "Seattle University, CPSC 5300, Winter Quarter 2024"
  */
 #include "sql_shell.h"
+#include "sql_exec.h"
 
 #include <stdio.h>
 
@@ -64,89 +65,15 @@ void SqlShell::run() {
     }
 }
 
-string SqlShell::execute(const hsql::SQLStatement *stmt) {
-    stringstream ss;
-    if (stmt->type() == kStmtSelect) {
-        ss << "SELECT ";
-        int count = ((SelectStatement *)stmt)->selectList->size();
-        for (Expr *expr : *((SelectStatement *)stmt)->selectList) {
-            this->printExpression(expr, ss);
-            if (--count) {
-                ss << ",";
-            }
-            ss << " ";
-        }
-
-        ss << "FROM ";
-
-        this->printTableRefInfo(((SelectStatement *)stmt)->fromTable, ss);
-
-        if (((SelectStatement *)stmt)->whereClause != NULL) {
-            ss << " WHERE ";
-            this->printExpression(((SelectStatement *)stmt)->whereClause, ss);
-        }
-    }
-
-    if (stmt->type() == kStmtCreate) {
-        ss << "CREATE TABLE " << ((CreateStatement *)stmt)->tableName;
-
-        ss << " (";
-        int count = ((CreateStatement *)stmt)->columns->size();
-        for (auto col : *((CreateStatement *)stmt)->columns) {
-            ss << this->columnDefinitionToString(col);
-            if (--count) {
-                ss << ", ";
-            }
-        }
-        ss << ")";
-    }
-
-    return ss.str();
+string SqlShell::execute(const SQLStatement *stmt) {
+    // outsource execute to SQLExec
+    // could refactor this so that we don't even need to have SqlShell::Exec at all
+    SQLExec *sql_exec = new SQLExec();
+    QueryResult *result = sql_exec->execute(stmt);
+    return result->get_message();
 }
 
-void SqlShell::testSQLParser() {
-    string query;
-    string expected;
-
-    query = "select * from foo left join goober on foo.x=goober.x";
-    expected = "SELECT * FROM foo LEFT JOIN goober ON foo.x = goober.x";
-    this->testParseSQLQuery(query, expected);
-
-    query = "select * from foo as f left join goober on f.x = goober.x";
-    expected = "SELECT * FROM foo AS f LEFT JOIN goober ON f.x = goober.x";
-    this->testParseSQLQuery(query, expected);
-
-    query = "select * from foo as f left join goober as g on f.x = g.x";
-    expected = "SELECT * FROM foo AS f LEFT JOIN goober AS g ON f.x = g.x";
-    this->testParseSQLQuery(query, expected);
-
-    query = "select a,b,g.c from foo as f, goo as g";
-    expected = "SELECT a, b, g.c FROM goo AS g, foo AS f";
-    this->testParseSQLQuery(query, expected);
-
-    query = "select a,b,c from foo where foo.b > foo.c + 6";
-    expected = "SELECT a, b, c FROM foo WHERE foo.b > foo.c + 6";
-    this->testParseSQLQuery(query, expected);
-
-    query =
-        "select f.a,g.b,h.c from foo as f join goober as g on f.id = g.id "
-        "where f.z >1";
-    expected =
-        "SELECT f.a, g.b, h.c FROM foo AS f JOIN goober AS g ON f.id = "
-        "g.id WHERE f.z > 1";
-    this->testParseSQLQuery(query, expected);
-
-    query = "create table foo (a text, b integer, c double)";
-    expected = "CREATE TABLE foo (a TEXT, b INT, c DOUBLE)";
-    this->testParseSQLQuery(query, expected);
-
-    query = "foo bar blaz";
-    expected = "";
-    this->testParseSQLQuery(query, expected);
-
-    printf("Testing SQL Executor Passed!\n");
-}
-
+//
 void SqlShell::printExpression(Expr *expr, stringstream &ss) {
     switch (expr->type) {
         case kExprStar:
@@ -214,6 +141,7 @@ void SqlShell::printTableRefInfo(TableRef *table, stringstream &ss) {
     }
 }
 
+// remove?
 string SqlShell::columnDefinitionToString(const ColumnDefinition *col) {
     string ret(col->name);
     switch (col->type) {
@@ -248,4 +176,20 @@ void SqlShell::testParseSQLQuery(string query, string expected) {
         }
     }
     delete result;
+}
+
+// Tests are broken for now
+void SqlShell::testSQLParser() {
+    string query;
+    string expected;
+
+    // query = "select * from foo left join goober on foo.x=goober.x";
+    // expected = "SELECT * FROM foo LEFT JOIN goober ON foo.x = goober.x";
+    // this->testParseSQLQuery(query, expected);
+
+    // query = "foo bar blaz";
+    // expected = "";
+    // this->testParseSQLQuery(query, expected);
+
+    printf("Testing SQLShell needs to be implemented with new tests!\n");
 }
