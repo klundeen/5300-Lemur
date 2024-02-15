@@ -20,7 +20,7 @@ int main(int argc, char *argv[]) {
     }
     DbEnv env(0U);
     SQLShell shell;
-    shell.initializeDbEnv(argv[1], &env);
+    shell.initializeEnv(argv[1], &env);
     shell.run();    
     return EXIT_SUCCESS;
 }

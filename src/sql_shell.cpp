@@ -19,7 +19,7 @@ using namespace hsql;
 
 bool SQLShell::initialized = false;
 
-void SQLShell::initializeDbEnv(const char *envHome, DbEnv *env) {
+void SQLShell::initializeEnv(const char *envHome, DbEnv *env) {
     if (this->initialized) {
         cerr << "(sql5300: database environment already initialized) \n";
         return;
@@ -33,6 +33,7 @@ void SQLShell::initializeDbEnv(const char *envHome, DbEnv *env) {
         exit(1);
     }
     _DB_ENV = env;
+    initialize_schema_tables();
     this->initialized = true;
     printf("(sql5300: running with database environment at %s)\n", envHome);
 }

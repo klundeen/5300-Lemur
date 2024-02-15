@@ -21,7 +21,7 @@ class SQLShell {
      * @param envHome  the home directory of the database
      * @param env      the database environment to initialize
      */
-    virtual void initializeDbEnv(const char *envHome, DbEnv *env);
+    virtual void initializeEnv(const char *envHome, DbEnv *env);
 
     /**
      *  Run SQL Shell to accept user input and execute SQL commands
