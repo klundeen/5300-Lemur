@@ -48,8 +48,10 @@ QueryResult::~QueryResult() {
 
 
 QueryResult *SQLExec::execute(const SQLStatement *statement) {
-    // FIXME: initialize _tables table, if not yet present
-
+    // FIXED: initialize _tables table, if not yet present
+    if (!tables) {
+        tables = new Tables();
+    }
     try {
         switch (statement->type()) {
             case kStmtCreate:
@@ -72,7 +74,44 @@ SQLExec::column_definition(const ColumnDefinition *col, Identifier &column_name,
 }
 
 QueryResult *SQLExec::create(const CreateStatement *statement) {
-    return new QueryResult("not implemented"); // FIXME
+    string table_name = string(statement->tableName);
+    ValueDict table_record = {{"table_name", Value(table_name)}};
+    tables->insert(&table_record);
+    try {
+        ColumnNames names;
+        ColumnAttributes attribs;
+        DbRelation &columns_table = tables->get_table(table_name); // "runtime polymorphism"
+        try {
+            for (auto const &column : *statement->columns) {
+                string type;
+                if (column->type == ColumnDefinition::DataType::INT)
+                    type = "INT";
+                else if (column->type == ColumnDefinition::DataType::TEXT) {
+                    type = "TEXT";
+                } else {
+                    throw DbRelationError("Bad type");
+                }
+
+                ValueDict row;
+                row["table_name"] = Value(table_name);
+                row["column_name"] = Value(column->name);
+                row["table_name"] = Value(type);
+                columns_table.insert(&row);
+            }
+        } catch (DbRelationError &e) {
+            for (size_t i = 0; i < statement->columns->size(); i++) {
+                Handles *handles = columns_table.select(&table_record);
+                for (auto handle : *handles) {
+                    columns_table.del(handle);
+                }
+            }
+            return new QueryResult("ERR CREATE: " + string(e.what()) + "\n");
+        }
+    } catch (DbRelationError &e) {
+        tables->del((*(tables->select(&table_record)))[0]); // get first record, FIXME: this looks bad
+        return new QueryResult("ERR CREATE: " + string(e.what()) + "\n");
+    }
+    return new QueryResult("Created " + table_name + "\n");
 }
 
 // DROP ...
