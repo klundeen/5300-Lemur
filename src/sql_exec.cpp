@@ -78,8 +78,6 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
     ValueDict table_record = {{"table_name", Value(table_name)}};
     tables->insert(&table_record);
     try {
-        ColumnNames names;
-        ColumnAttributes attribs;
         DbRelation &columns_table = tables->get_table(table_name); // "runtime polymorphism"
         try {
             for (auto const &column : *statement->columns) {
@@ -95,7 +93,7 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
                 ValueDict row;
                 row["table_name"] = Value(table_name);
                 row["column_name"] = Value(column->name);
-                row["table_name"] = Value(type);
+                row["data_type"] = Value(type);
                 columns_table.insert(&row);
             }
         } catch (DbRelationError &e) {
