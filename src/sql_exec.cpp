@@ -120,15 +120,53 @@ QueryResult *SQLExec::drop(const DropStatement *statement) {
 }
 
 QueryResult *SQLExec::show(const ShowStatement *statement) {
-    return new QueryResult("not implemented"); // FIXME
+    switch (statement->type) {
+        case ShowStatement::EntityType::kTables:
+            return show_tables();
+        case ShowStatement::EntityType::kColumns:
+            return show_columns(statement);
+        default:
+            return new QueryResult("Cannot show unknown entity type!");
+    }
 }
 
 QueryResult *SQLExec::show_tables() {
-    return new QueryResult("not implemented"); // FIXME
+    ColumnNames names;
+    ColumnAttributes attribs;
+    tables->get_columns(Tables::TABLE_NAME, names, attribs);
+
+    ValueDicts rows;
+    Handles *handles = tables->select();
+    for (Handle &handle : *handles) {
+        ValueDict *row = tables->project(handle);
+        if ((*row)["table_name"].s == "_tables" || (*row)["table_name"].s == "_columns") {
+            continue;
+        }
+        rows.push_back(row);
+    }
+
+    string message = "succesfully returned " + std::to_string(rows.size()) + " rows";
+    delete handles;
+
+    return new QueryResult(&names, &attribs, &rows, message);
 }
 
 QueryResult *SQLExec::show_columns(const ShowStatement *statement) {
-    return new QueryResult("not implemented"); // FIXME
+    string table_name = string(statement->tableName);
+    ColumnNames names;
+    ColumnAttributes attribs;
+    tables->get_columns(table_name, names, attribs);
+
+    ValueDicts rows;
+    for (Identifier name : names) {
+        ValueDict row;
+        row["column_name"] = name;
+        rows.push_back(&row);
+    }
+
+    string message = "succesfully returned " + std::to_string(rows.size()) + " rows";
+
+    return new QueryResult(&names, &attribs, &rows, message);
 }
 
 
