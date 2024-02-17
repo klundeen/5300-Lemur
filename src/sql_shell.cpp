@@ -13,6 +13,8 @@
 #include <iostream>
 #include <sstream>
 #include <string>
+#define DEBUG_ENABLED
+#include "debug.h"
 
 using namespace std;
 using namespace hsql;
@@ -33,7 +35,9 @@ void SQLShell::initializeEnv(const char *envHome, DbEnv *env) {
         exit(1);
     }
     _DB_ENV = env;
+    DEBUG_OUT("before init\n");
     initialize_schema_tables();
+    DEBUG_OUT("after init\n");
     this->initialized = true;
     printf("(sql5300: running with database environment at %s)\n", envHome);
 }

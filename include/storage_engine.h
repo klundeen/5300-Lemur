@@ -350,7 +350,7 @@ public:
      * @returns       dictionary of values from row (keyed by all column names)
      */
     virtual ValueDict *project(Handle handle) = 0;
-
+ 
     /**
      * Return a sequence of values for handle given by column_names
      * (SELECT <column_names>).
@@ -359,6 +359,15 @@ public:
      * @returns             dictionary of values from row (keyed by column_names)
      */
     virtual ValueDict *project(Handle handle, const ColumnNames *column_names) = 0;
+ 
+    /**
+     * Return a sequence of values for handle given by column_names (from dictionary)
+     * (SELECT <column_names>).
+     * @param handle        row to get values from
+     * @param column_names  list of column names to project (taken from keys of dict)
+     * @return              dictionary of values from row (keyed by column_names)
+     */
+    virtual ValueDict *project(Handle handle, const ValueDict *column_names);
 
     protected:
     Identifier table_name;

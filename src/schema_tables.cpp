@@ -5,15 +5,22 @@
  */
 #include "schema_tables.h"
 #include "parse_tree_to_string.h"
+#define DEBUG_ENABLED
+#include "debug.h"
 
 
 void initialize_schema_tables() {
+    DEBUG_OUT("Before creating tables\n");
     Tables tables;
+    DEBUG_OUT("After creating tables 1\n");
     tables.create_if_not_exists();
+    DEBUG_OUT("After creating tables 2\n");
     tables.close();
+    DEBUG_OUT("After creating tables 3\n");
     Columns columns;
     columns.create_if_not_exists();
     columns.close();
+    DEBUG_OUT("After creating columns\n");
 }
 
 // Not terribly useful since the parser weeds most of these out
@@ -74,12 +81,17 @@ Tables::Tables() : HeapTable(TABLE_NAME, COLUMN_NAMES(), COLUMN_ATTRIBUTES()) {
 
 // Create the file and also, manually add schema tables.
 void Tables::create() {
+    DEBUG_OUT("get in here??? create\n");
     HeapTable::create();
+    DEBUG_OUT("create table1\n");
     ValueDict row;
     row["table_name"] = Value("_tables");
+    DEBUG_OUT("create table2\n");
     insert(&row);
     row["table_name"] = Value("_columns");
+    DEBUG_OUT("create table3\n");
     insert(&row);
+    DEBUG_OUT("create table4\n");
 }
 
 // Manually check that table_name is unique.
@@ -183,19 +195,25 @@ Columns::Columns() : HeapTable(TABLE_NAME, COLUMN_NAMES(), COLUMN_ATTRIBUTES()) 
 
 // Create the file and also, manually add schema columns.
 void Columns::create() {
+    DEBUG_OUT("here 1\n");
     HeapTable::create();
     ValueDict row;
     row["data_type"] = Value("TEXT");  // all these are TEXT fields
     row["table_name"] = Value("_tables");
     row["column_name"] = Value("table_name");
+    DEBUG_OUT("here 2\n");
     insert(&row);
     row["table_name"] = Value("_columns");
     row["column_name"] = Value("table_name");
+    DEBUG_OUT("here 3\n");
     insert(&row);
+    DEBUG_OUT("here 4\n");
     row["column_name"] = Value("column_name");
     insert(&row);
+    DEBUG_OUT("here 5\n");
     row["column_name"] = Value("data_type");
     insert(&row);
+    DEBUG_OUT("here 6\n");
 }
 
 // Manually check that (table_name, column_name) is unique.

@@ -8,19 +8,28 @@
 #include <cstring>
 
 #include "heap_storage.h"
+#define DEBUG_ENABLED
+#include "debug.h"
 
 HeapTable::HeapTable(Identifier table_name, ColumnNames column_names,
                      ColumnAttributes column_attributes)
     : DbRelation(table_name, column_names, column_attributes),
       file(table_name) {}
 
-void HeapTable::create() { this->file.create(); }
+void HeapTable::create() { 
+    DEBUG_OUT("create_ 1\n");
+    this->file.create(); 
+    DEBUG_OUT("create_ 2\n");
+    }
 
 void HeapTable::create_if_not_exists() {
     try {
+        DEBUG_OUT("create_if 1\n");
         this->file.open();
     } catch (DbException &e) {  // DBNoSuchFileError
+        DEBUG_OUT("create_if 2\n");
         this->create();
+        DEBUG_OUT("create_if 3\n");
     }
 }
 
@@ -41,22 +50,40 @@ void HeapTable::update(const Handle handle, const ValueDict *new_values) {}
 
 void HeapTable::del(const Handle handle) {}
 
-Handles *HeapTable::select() {
-    Handles *handles = new Handles();
-    BlockIDs *blockIDs = this->file.block_ids();
-    for (auto const &blockID : *blockIDs) {
-        SlottedPage *page = this->file.get(blockID);
-        RecordIDs *recordIDs = page->ids();
-        for (auto const &recordID : *recordIDs)
-            handles->push_back(Handle(blockID, recordID));
-        delete recordIDs;
-        delete page;
-    }
-    delete blockIDs;
-    return handles;
+// prof
+bool HeapTable::selected(Handle handle, const ValueDict *where) {
+    if (where == nullptr)
+        return true;
+    ValueDict *row = this->project(handle, where);
+    bool is_selected = *row == *where;
+    delete row;
+    return is_selected;
 }
 
-Handles *HeapTable::select(const ValueDict *where) { return this->select(); }
+// Prof code
+Handles *HeapTable::select() {
+    return select(nullptr);
+}
+ 
+// Prof code
+Handles *HeapTable::select(const ValueDict *where) {
+    open();
+    Handles *handles = new Handles();
+    BlockIDs *block_ids = file.block_ids();
+    for (auto const &block_id: *block_ids) {
+        SlottedPage *block = file.get(block_id);
+        RecordIDs *record_ids = block->ids();
+        for (auto const &record_id: *record_ids) {
+            Handle handle(block_id, record_id);
+            if (selected(handle, where))
+                handles->push_back(Handle(block_id, record_id));
+        }
+        delete record_ids;
+        delete block;
+    }
+    delete block_ids;
+    return handles;
+}
 
 ValueDict *HeapTable::project(Handle handle) {
     return this->project(handle, &this->column_names);

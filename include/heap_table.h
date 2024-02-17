@@ -66,7 +66,7 @@ protected:
 
     virtual ValueDict *unmarshal(Dbt *data) const;
 
-    // virtual bool selected(Handle handle, const ValueDict *where);
+    virtual bool selected(Handle handle, const ValueDict *where);
 };
 
 bool test_heap_storage();
