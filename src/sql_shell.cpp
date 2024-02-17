@@ -75,7 +75,9 @@ string SQLShell::execute(const SQLStatement *stmt) {
     // could refactor this so that we don't even need to have SQLShell::Exec at all
     SQLExec *sql_exec = new SQLExec();
     QueryResult *result = sql_exec->execute(stmt);
-    return result->get_message();
+    DEBUG_OUT("SQLShell here 1\n");
+    std::cout << *result << std::endl;
+    return "hello";
 }
 
 //
