@@ -114,7 +114,38 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
 
 // DROP ...
 QueryResult *SQLExec::drop(const DropStatement *statement) {
-    return new QueryResult("not implemented"); // FIXME
+    string table_name = statement->name;
+    if (table_name == "_tables" || table_name == "_columns") {
+        throw SQLExecError("Cannot drop a schema table");
+    }
+
+    DbRelation &table = tables->get_table(table_name);
+    ValueDict where;
+    where["table_name"] = table_name;
+    Handles *handles = table.select(&where);
+
+    if (handles->size() == 0) {
+        throw SQLExecError("Table does not exist");
+    }
+
+    // remove from _tables schema
+    tables->del((*handles)[0]);
+
+    // remove from _columns schema
+    DbRelation &columns_table = tables->get_table(Columns::TABLE_NAME);
+    Handles *col_handles = columns_table.select(&where);
+
+    for (Handle &handle : *col_handles) {
+        columns_table.del(handle);
+    }
+
+    table.drop();
+
+    delete handles;
+    delete col_handles;
+
+    string message = "Dropped " + table_name;
+    return new QueryResult(message);
 }
 
 QueryResult *SQLExec::show(const ShowStatement *statement) {
