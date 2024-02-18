@@ -197,16 +197,8 @@ QueryResult *SQLExec::show_columns(const ShowStatement *statement) {
     DEBUG_OUT("SQLExec::show_columns() - begin\n");
 
     ColumnNames *names = new ColumnNames();
-    names->push_back("table_name");
-    names->push_back("column_name");
-    names->push_back("data_type");
-
     ColumnAttributes *attribs = new ColumnAttributes();
-    ColumnAttribute column_attr(ColumnAttribute::DataType::TEXT);
-    for (size_t i = 0; i < names->size(); i++)
-    {
-        attribs->push_back(column_attr);
-    }
+    tables->get_columns(Columns::TABLE_NAME, *names, *attribs);
 
     ValueDict target_table;
     target_table["table_name"] = Value(statement->tableName);
