@@ -37,6 +37,7 @@ void HeapTable::create_if_not_exists() {
 void HeapTable::drop() {
     DEBUG_OUT("HeapTable::drop() - begin\n");
     this->create_if_not_exists();
+    this->file.close();
     this->file.drop();
     DEBUG_OUT("HeapTable::drop() - end\n");
 }
@@ -63,7 +64,9 @@ Handle HeapTable::insert(const ValueDict *row) {
     return handle;
 }
 
-void HeapTable::update(const Handle handle, const ValueDict *new_values) {}
+void HeapTable::update(const Handle handle, const ValueDict *new_values) {
+    throw DbRelationError("Not implemented");
+}
 
 void HeapTable::del(const Handle handle) {
     DEBUG_OUT("HeapTable::del() - begin\n");
@@ -77,23 +80,10 @@ void HeapTable::del(const Handle handle) {
     DEBUG_OUT("HeapTable::del() - end\n");
 }
 
-// prof
-bool HeapTable::selected(Handle handle, const ValueDict *where) {
-    if (where == nullptr) {
-        return true;
-    }
-    ValueDict *row = this->project(handle, where);
-    bool is_selected = *row == *where;
-    delete row;
-    return is_selected;
-}
-
-// Prof code
 Handles *HeapTable::select() {
     return select(nullptr);
 }
 
-// Prof code
 Handles *HeapTable::select(const ValueDict *where) {
     open();
     Handles *handles = new Handles();
@@ -117,25 +107,28 @@ Handles *HeapTable::select(const ValueDict *where) {
 }
 
 ValueDict *HeapTable::project(Handle handle) {
+    DEBUG_OUT("HeapTable::project(handle) - begin/end\n");
     return this->project(handle, &this->column_names);
 }
 
 ValueDict *HeapTable::project(Handle handle, const ColumnNames *column_names) {
-    BlockID blockID = handle.first;
-    RecordID recordID = handle.second;
-    SlottedPage *page = this->file.get(blockID);
-    Dbt *data = page->get(recordID);
-    ValueDict *row = this->unmarshal(data);
-
-    ValueDict *projectedRow = new ValueDict();
-    for (auto const &columnName : *column_names) {
-        auto search = row->find(columnName);
-        if (search == row->end()) throw DbRelationError("Invalid column name");
-        Value columnValue = search->second;
-        projectedRow->insert({columnName, columnValue});
+    BlockID block_id = handle.first;
+    RecordID record_id = handle.second;
+    SlottedPage *block = file.get(block_id);
+    Dbt *data = block->get(record_id);
+    ValueDict *row = unmarshal(data);
+    delete data;
+    delete block;
+    if (column_names->empty())
+        return row;
+    ValueDict *result = new ValueDict();
+    for (auto const &column_name: *column_names) {
+        if (row->find(column_name) == row->end())
+            throw DbRelationError("table does not have column named '" + column_name + "'");
+        (*result)[column_name] = (*row)[column_name];
     }
     delete row;
-    return projectedRow;
+    return result;
 }
 
 ValueDict *HeapTable::validate(const ValueDict *row) const {
@@ -176,71 +169,82 @@ Handle HeapTable::append(const ValueDict *row) {
 }
 
 Dbt *HeapTable::marshal(const ValueDict *row) const {
-    char bytes[DbBlock::BLOCK_SZ];
+    char *bytes = new char[DbBlock::BLOCK_SZ]; // more than we need (we insist that one row fits into DbBlock::BLOCK_SZ)
     uint offset = 0;
-    uint columnNumber = 0;
-
-    for (auto const &columnName : this->column_names) {
-        ColumnAttribute ca = this->column_attributes[columnNumber++];
-        ValueDict::const_iterator column = row->find(columnName);
+    uint col_num = 0;
+    for (auto const &column_name: this->column_names) {
+        ColumnAttribute ca = this->column_attributes[col_num++];
+        ValueDict::const_iterator column = row->find(column_name);
         Value value = column->second;
-        ColumnAttribute::DataType type = ca.get_data_type();
-        if (type == ColumnAttribute::INT) {
-            // n is int32_t we want 4 bytes
-            auto size = sizeof(value.n);
-            memcpy(bytes + offset, &value.n, size);
+
+        if (ca.get_data_type() == ColumnAttribute::DataType::INT) {
+            if (offset + 4 > DbBlock::BLOCK_SZ - 4)
+                throw DbRelationError("row too big to marshal");
+            *(int32_t *) (bytes + offset) = value.n;
+            offset += sizeof(int32_t);
+        } else if (ca.get_data_type() == ColumnAttribute::DataType::TEXT) {
+            u_long size = value.s.length();
+            if (size > UINT16_MAX)
+                throw DbRelationError("text field too long to marshal");
+            if (offset + 2 + size > DbBlock::BLOCK_SZ)
+                throw DbRelationError("row too big to marshal");
+            *(uint16_t *) (bytes + offset) = size;
+            offset += sizeof(uint16_t);
+            memcpy(bytes + offset, value.s.c_str(), size); // assume ascii for now
             offset += size;
-        } else if (type == ColumnAttribute::TEXT) {
-            // assume string length fits in 2 bytes (64k)
-            auto size = sizeof(u_int16_t);
-            u_int16_t len = value.s.length();
-            memcpy(bytes + offset, &len, size);
-            offset += size;
-            // assume ascii
-            memcpy(bytes + offset, value.s.c_str(), len);
-            offset += len;
+        } else if (ca.get_data_type() == ColumnAttribute::DataType::BOOLEAN) {
+            if (offset + 1 > DbBlock::BLOCK_SZ - 1)
+                throw DbRelationError("row too big to marshal");
+            *(uint8_t *) (bytes + offset) = (uint8_t) value.n;
+            offset += sizeof(uint8_t);
         } else {
-            throw DbRelationError("Only supports marshaling INT and TEXT");
+            throw DbRelationError("Only know how to marshal INT, TEXT, and BOOLEAN");
         }
     }
-
-    if (offset > DbBlock::BLOCK_SZ - 8)
-        throw DbRelationError("Row too large to marshal");
-
-    char *trimmedBytes = new char[offset];
-    memcpy(trimmedBytes, bytes, offset);
-
-    return new Dbt(trimmedBytes, offset);
+    char *right_size_bytes = new char[offset];
+    memcpy(right_size_bytes, bytes, offset);
+    delete[] bytes;
+    Dbt *data = new Dbt(right_size_bytes, offset);
+    return data;
 }
 
 ValueDict *HeapTable::unmarshal(Dbt *data) const {
-    char *bytes = (char *)data->get_data();
-    uint offset = 0;
-    uint columnNumber = 0;
-
     ValueDict *row = new ValueDict();
-    for (auto const &columnName : this->column_names) {
-        ColumnAttribute ca = this->column_attributes[columnNumber++];
-        auto type = ca.get_data_type();
-        if (type == ColumnAttribute::INT) {
-            int32_t n;
-            auto size = sizeof(int32_t);
-            memcpy(&n, bytes + offset, size);
-            row->insert({columnName, Value(n)});
+    Value value;
+    char *bytes = (char *) data->get_data();
+    uint offset = 0;
+    uint col_num = 0;
+    for (auto const &column_name: this->column_names) {
+        ColumnAttribute ca = this->column_attributes[col_num++];
+        value.data_type = ca.get_data_type();
+        if (ca.get_data_type() == ColumnAttribute::DataType::INT) {
+            value.n = *(int32_t *) (bytes + offset);
+            offset += sizeof(int32_t);
+        } else if (ca.get_data_type() == ColumnAttribute::DataType::TEXT) {
+            uint16_t size = *(uint16_t *) (bytes + offset);
+            offset += sizeof(uint16_t);
+            char buffer[DbBlock::BLOCK_SZ];
+            memcpy(buffer, bytes + offset, size);
+            buffer[size] = '\0';
+            value.s = std::string(buffer);  // assume ascii for now
             offset += size;
-        } else if (type == ColumnAttribute::TEXT) {
-            u_int16_t len;
-            auto size = sizeof(u_int16_t);
-            memcpy(&len, bytes + offset, size);
-            offset += size;
-            std::string s(bytes + offset, len);
-            row->insert({columnName, Value(s)});
-            offset += len;
+        } else if (ca.get_data_type() == ColumnAttribute::DataType::BOOLEAN) {
+            value.n = *(uint8_t *) (bytes + offset);
+            offset += sizeof(uint8_t);
         } else {
-            throw DbRelationError("Only supports unmarshaling INT and TEXT");
+            throw DbRelationError("Only know how to unmarshal INT, TEXT, and BOOLEAN");
         }
+        (*row)[column_name] = value;
     }
-
     return row;
 }
 
+bool HeapTable::selected(Handle handle, const ValueDict *where) {
+    if (where == nullptr) {
+        return true;
+    }
+    ValueDict *row = this->project(handle, where);
+    bool is_selected = *row == *where;
+    delete row;
+    return is_selected;
+}
