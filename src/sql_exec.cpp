@@ -4,7 +4,7 @@
  * @see "Seattle University, CPSC5300, Winter Quarter 2024"
  */
 #include "sql_exec.h"
-// #define DEBUG_ENABLED
+#define DEBUG_ENABLED
 #include "debug.h"
 
 using namespace std;
@@ -127,13 +127,12 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
         // Something prevented adding columns to _columns,
         // must remove table, as well as columns we did add.
         tables->del(table_handle);
-        for (auto const &handle : *column_handles) {
-            columns_table.del(handle);
-        }
+
         DEBUG_OUT("SQLExec::create() - end catch\n");
         throw e;
     }
 
+    // Create file for table
     DbRelation &table = tables->get_table(table_name);
     table.create();
 
@@ -161,17 +160,17 @@ QueryResult *SQLExec::drop(const DropStatement *statement) {
     }
 
     // remove from _tables schema
-    DEBUG_OUT("SQLExec::drop() - remove from _tables\n");
-    tables->del((*handles)[0]);
+    // DEBUG_OUT("SQLExec::drop() - remove from _tables\n");
+    // tables->del((*handles)[0]);
 
     // remove from _columns schema
-    DEBUG_OUT("SQLExec::drop() - remove from _columns\n");
-    DbRelation &columns_table = tables->get_table(Columns::TABLE_NAME);
-    Handles *col_handles = columns_table.select(&where);
+    // DEBUG_OUT("SQLExec::drop() - remove from _columns\n");
+    // DbRelation &columns_table = tables->get_table(Columns::TABLE_NAME);
+    // Handles *col_handles = columns_table.select(&where);
 
-    for (Handle &handle : *col_handles) {
-        columns_table.del(handle);
-    }
+    // for (Handle &handle : *col_handles) {
+    //     columns_table.del(handle);
+    // }
 
     DbRelation &table = tables->get_table(table_name);
     table.drop();
@@ -201,6 +200,7 @@ QueryResult *SQLExec::show_tables() {
     ValueDicts *rows = new ValueDicts();
     Handles *handles = tables->select();
     for (Handle &handle : *handles) {
+        DEBUG_OUT("SQLExec::show_tables() - for\n");
         ValueDict *row = tables->project(handle);
         if ((*row)["table_name"].s == "_tables" || (*row)["table_name"].s == "_columns") {
             continue;

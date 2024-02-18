@@ -8,7 +8,7 @@
 #include <cstring>
 
 #include "heap_storage.h"
-// #define DEBUG_ENABLED
+#define DEBUG_ENABLED
 #include "debug.h"
 
 HeapTable::HeapTable(Identifier table_name, ColumnNames column_names,
@@ -36,6 +36,7 @@ void HeapTable::create_if_not_exists() {
 
 void HeapTable::drop() {
     DEBUG_OUT("HeapTable::drop() - begin\n");
+    this->create_if_not_exists();
     this->file.drop();
     DEBUG_OUT("HeapTable::drop() - end\n");
 }
@@ -78,8 +79,9 @@ void HeapTable::del(const Handle handle) {
 
 // prof
 bool HeapTable::selected(Handle handle, const ValueDict *where) {
-    if (where == nullptr)
+    if (where == nullptr) {
         return true;
+    }
     ValueDict *row = this->project(handle, where);
     bool is_selected = *row == *where;
     delete row;
@@ -90,7 +92,7 @@ bool HeapTable::selected(Handle handle, const ValueDict *where) {
 Handles *HeapTable::select() {
     return select(nullptr);
 }
- 
+
 // Prof code
 Handles *HeapTable::select(const ValueDict *where) {
     open();
@@ -102,7 +104,10 @@ Handles *HeapTable::select(const ValueDict *where) {
         for (auto const &record_id: *record_ids) {
             Handle handle(block_id, record_id);
             if (selected(handle, where))
+            {
+                DEBUG_OUT_VAR("selected block_id: %d record_id: %d\n", block_id, record_id);
                 handles->push_back(Handle(block_id, record_id));
+            }
         }
         delete record_ids;
         delete block;

@@ -5,7 +5,7 @@
  */
 #include "schema_tables.h"
 #include "parse_tree_to_string.h"
-// #define DEBUG_ENABLED
+#define DEBUG_ENABLED
 #include "debug.h"
 
 
@@ -135,8 +135,7 @@ void Tables::get_columns(Identifier table_name, ColumnNames &column_names, Colum
     ColumnAttribute column_attribute;
     for (auto const &handle: *handles) {
         DEBUG_OUT("Tables::get_columns() - for\n");
-        ValueDict *row = Tables::columns_table->project(
-                handle);  // get the row's values: {'column_name': <name>, 'data_type': <type>}
+        ValueDict *row = Tables::columns_table->project(handle);  // get the row's values: {'column_name': <name>, 'data_type': <type>}
 
         Identifier column_name = (*row)["column_name"].s;
         column_names.push_back(column_name);

@@ -11,7 +11,7 @@
 #include "db_cxx.h"
 #include "heap_storage.h"
 
-// #define DEBUG_ENABLED
+#define DEBUG_ENABLED
 #include "debug.h"
 
 using namespace std;
