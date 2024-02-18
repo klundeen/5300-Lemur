@@ -231,9 +231,9 @@ Handle Columns::insert(const ValueDict *row) {
     bool unique = handles->empty();
     delete handles;
     if (!unique)
+    {
         throw DbRelationError("duplicate column " + row->at("table_name").s + "." + row->at("column_name").s);
+    }
 
     return HeapTable::insert(row);
 }
-
-

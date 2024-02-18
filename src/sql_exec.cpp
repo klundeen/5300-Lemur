@@ -96,7 +96,7 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
         tables->insert(&table_record);
     } catch (DbRelationError &e) {
         DEBUG_OUT_VAR("SQLExec::create() - catch: %s\n", e.what());
-        return new QueryResult("Error: DbRelationError: " + string(e.what()) + "\n");
+        return new QueryResult("Error: DbRelationError: " + string(e.what()));
     }
 
     // Create table
@@ -134,13 +134,13 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
                 }
             }
             DEBUG_OUT("SQLExec::create() - end catch\n");
-            return new QueryResult("Error: DbRelationError: " + string(e.what()) + "\n");
+            return new QueryResult("Error: DbRelationError: " + string(e.what()));
         }
     } catch (DbRelationError &e) {
         DEBUG_OUT_VAR("SQLExec::create() - catch: %s\n", e.what());
         tables->del((*(tables->select(&table_record)))[0]); // get first record, FIXME: this looks bad
         DEBUG_OUT("SQLExec::create() - end catch\n");
-        return new QueryResult("Error: DbRelationError: " + string(e.what()) + "\n");
+        return new QueryResult("Error: DbRelationError: " + string(e.what()));
     }
 
     DEBUG_OUT("SQLExec::create() - end (success)\n");
