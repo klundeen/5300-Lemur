@@ -86,24 +86,18 @@ SQLExec::column_definition(const ColumnDefinition *col, Identifier &column_name,
 QueryResult *SQLExec::create(const CreateStatement *statement) {
     DEBUG_OUT("SQLExec::create() - begin\n");
 
-
-
     // Add table to _tables
     string table_name = string(statement->tableName);
-
-
     ValueDict table_record = {{"table_name", Value(table_name)}};
     Handle table_handle;
     try {
         DEBUG_OUT("SQLExec::create() - try\n");
         table_handle = tables->insert(&table_record);
-        tables->del(table_handle);
     } catch (DbRelationError &e) {
         DEBUG_OUT_VAR("SQLExec::create() - catch: %s\n", e.what());
         throw e;
     }
 
-    return new QueryResult("created " + table_name);
 
     // Add columns to _columns
     DbRelation &columns_table = tables->get_table(Columns::TABLE_NAME);

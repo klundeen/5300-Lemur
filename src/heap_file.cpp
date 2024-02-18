@@ -41,6 +41,7 @@ void HeapFile::drop(void) {
 void HeapFile::open(void) {
     DEBUG_OUT("HeapFile::open() - begin\n");
     if (!this->closed){
+        DEBUG_OUT("HeapFile::open() - end (already open)\n");
         return;
     }
     this->db_open();
@@ -49,11 +50,14 @@ void HeapFile::open(void) {
 }
 
 void HeapFile::close(void) {
+    DEBUG_OUT("HeapFile::close() - begin\n");
     if (this->closed) {
+        DEBUG_OUT("HeapFile::close() - end (already closed)\n");
         return;
     }
     db.close(0);
     this->closed = true;
+    DEBUG_OUT("HeapFile::close() - end\n");
 }
 
 SlottedPage *HeapFile::get_new(void) {
@@ -76,18 +80,20 @@ SlottedPage *HeapFile::get_new(void) {
 }
 
 SlottedPage *HeapFile::get(BlockID block_id) {
-    DEBUG_OUT_VAR("HeapFile::get(%d) - begin\n", block_id);
+    DEBUG_OUT("HeapFile::get() - begin\n");
+    DEBUG_OUT_VAR("HeapFile::get() - block: %d\n", block_id);
     Dbt data;
     Dbt key(&block_id, sizeof(block_id));
     this->db.get(nullptr, &key, &data, 0);
 
-    DEBUG_OUT_VAR("HeapFile::get(%d) - end\n", block_id);
+    DEBUG_OUT("HeapFile::get() - end\n");
     return new SlottedPage(data, block_id);
 }
 
 void HeapFile::put(DbBlock *block) {
     DEBUG_OUT("HeapFile::put() - begin\n");
     BlockID block_id = block->get_block_id();
+    DEBUG_OUT_VAR("HeapFile::put() - block: %d\n", block_id);
     Dbt key(&block_id, sizeof(block_id));
 
     db.put(nullptr, &key, block->get_block(), 0);

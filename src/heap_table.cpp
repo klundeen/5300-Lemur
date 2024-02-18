@@ -105,6 +105,7 @@ Handles *HeapTable::select() {
 }
 
 Handles *HeapTable::select(const ValueDict *where) {
+    DEBUG_OUT("HeapTable::select() - begin\n");
     open();
     Handles *handles = new Handles();
     BlockIDs *block_ids = file.block_ids();
@@ -123,6 +124,7 @@ Handles *HeapTable::select(const ValueDict *where) {
         delete block;
     }
     delete block_ids;
+    DEBUG_OUT("HeapTable::select() - end\n");
     return handles;
 }
 

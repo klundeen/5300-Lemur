@@ -93,6 +93,7 @@ Handle Tables::insert(const ValueDict *row) {
     DEBUG_OUT_VAR("Tables::insert(\"table_name\", \"%s\") - begin\n", row->at("table_name").s.c_str());
     // Note: Try SELECT * FROM _tables WHERE table_name = row["table_name"]
     //       It should return nothing.
+
     Handles *handles = select(row);
     bool unique = handles->empty();
     delete handles;
@@ -112,7 +113,18 @@ void Tables::del(Handle handle) {
     // remove from cache, if there
     ValueDict *row = project(handle);
     Identifier table_name = row->at("table_name").s;
+    DEBUG_OUT_VAR("Tables::del(%s)\n", table_name.c_str());
     delete row;
+
+#ifdef DEBUG_ENABLED
+    DEBUG_OUT("Tables::del() cache contents: ");
+    for(auto it = Tables::table_cache.cbegin(); it != Tables::table_cache.cend(); ++it)
+    {
+        std::cout << "\"" << it->first << "\" ";
+    }
+    std::cout << "\n";
+#endif
+
     if (Tables::table_cache.find(table_name) != Tables::table_cache.end()) {
         DEBUG_OUT("Tables::del() - removing from cache\n");
         DbRelation *table = Tables::table_cache.at(table_name);
