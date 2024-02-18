@@ -29,14 +29,6 @@ class SQLShell {
     virtual void run();
 
     /**
-     * Convert the parser result back into equivalent SQL command string
-     * Support SELECT and CREATE statment
-     * @param result  parser result to unparse
-     * @return        SQL equivalent to *result
-     */
-    virtual std::string execute(const hsql::SQLStatement *stmt);
-
-    /**
      * Run automatic test on SQL Parser
      */
     void testSQLParser();

@@ -56,29 +56,27 @@ void SQLShell::run() {
             continue;
         }
 
-        SQLParserResult *result = SQLParser::parseSQLString(query);
+        SQLParserResult *parser_result = SQLParser::parseSQLString(query);
+        SQLExec *sql_exec = new SQLExec();
 
-        if (result->isValid()) {
-            for (uint i = 0; i < result->size(); ++i)
-                printf("%s\n", this->execute(result->getStatement(i)).c_str());
+        if (parser_result->isValid()) {
+            for (uint i = 0; i < parser_result->size(); ++i)
+            {
+                // printf("%s\n", this->execute(result->getStatement(i)).c_str());
+                // this->execute(result->getStatement(i));
+                QueryResult *query_result = sql_exec->execute(parser_result->getStatement(i));
+                std::cout << *query_result << std::endl;
+                delete query_result;
+            }
         } else {
             printf("Invalid SQL: %s\n", query.c_str());
         }
-        delete result;
+        delete parser_result;
+        delete sql_exec;
     }
 }
 
-string SQLShell::execute(const SQLStatement *stmt) {
-    // outsource execute to SQLExec
-    // could refactor this so that we don't even need to have SQLShell::Exec at all
-    DEBUG_OUT("SQLShell::execute() - begin\n");
-    SQLExec *sql_exec = new SQLExec();
-    QueryResult *result = sql_exec->execute(stmt);
-    std::cout << *result << std::endl;
-    return "hello";
-}
 
-//
 void SQLShell::printExpression(Expr *expr, stringstream &ss) {
     switch (expr->type) {
         case kExprStar:
@@ -172,12 +170,17 @@ void SQLShell::testParseSQLQuery(string query, string expected) {
         printf("SQL> %s\n", query.c_str());
         printf("invalid SQL: %s\n", query.c_str());
     } else {
+        SQLExec *sql_exec = new SQLExec();
         for (uint i = 0; i < result->size(); ++i) {
-            const SQLStatement *stmt = result->getStatement(i);
-            string res = execute(stmt);
+            // const SQLStatement *stmt = result->getStatement(i);
+
+            QueryResult *query_result = sql_exec->execute(result->getStatement(i));
+            // std::cout << *query_result << std::endl;
+
+            // string res = execute(stmt);
             printf("SQL> %s\n", query.c_str());
-            printf(">>>> %s\n", res.c_str());
-            if (res != expected) printf("TEST FAILED\n");
+            printf(">>>> %s\n", query_result->get_message().c_str());
+            if (query_result->get_message() != expected) printf("TEST FAILED\n");
         }
     }
     delete result;
