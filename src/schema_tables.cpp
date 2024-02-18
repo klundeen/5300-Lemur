@@ -90,7 +90,7 @@ void Tables::create() {
 
 // Manually check that table_name is unique.
 Handle Tables::insert(const ValueDict *row) {
-    DEBUG_OUT("Tables::insert - begin\n");
+    DEBUG_OUT("Tables::insert() - begin\n");
     // Note: Try SELECT * FROM _tables WHERE table_name = row["table_name"]
     //       It should return nothing.
     Handles *handles = select(row);
@@ -98,9 +98,10 @@ Handle Tables::insert(const ValueDict *row) {
     delete handles;
     if (!unique)
     {
+        DEBUG_OUT("Tables::insert() - !unique\n");
         throw DbRelationError(row->at("table_name").s + " already exists");
     }
-    DEBUG_OUT("Tables::insert - end\n");
+    DEBUG_OUT("Tables::insert() - end\n");
     return HeapTable::insert(row);
 }
 

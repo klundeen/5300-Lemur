@@ -56,11 +56,13 @@ QueryResult::~QueryResult() {
 
 QueryResult *SQLExec::execute(const SQLStatement *statement) {
     // FIXED: initialize _tables table, if not yet present
+    DEBUG_OUT("SQLExec::execute() - begin\n");
     if (!tables) {
         tables = new Tables();
         tables->open();
     }
     try {
+        DEBUG_OUT("SQLExec::execute() - try\n");
         switch (statement->type()) {
             case kStmtCreate:
                 return create((const CreateStatement *) statement);
@@ -72,8 +74,10 @@ QueryResult *SQLExec::execute(const SQLStatement *statement) {
                 return new QueryResult("not implemented");
         }
     } catch (DbRelationError &e) {
+        DEBUG_OUT("SQLExec::execute() - catch\n");
         throw SQLExecError(string("DbRelationError: ") + e.what());
     }
+    DEBUG_OUT("SQLExec::execute() - end\n");
 }
 
 void
@@ -82,12 +86,15 @@ SQLExec::column_definition(const ColumnDefinition *col, Identifier &column_name,
 }
 
 QueryResult *SQLExec::create(const CreateStatement *statement) {
+    DEBUG_OUT("SQLExec::create() - begin\n");
     string table_name = string(statement->tableName);
     ValueDict table_record = {{"table_name", Value(table_name)}};
     tables->insert(&table_record);
     try {
+        DEBUG_OUT("SQLExec::create() - try\n");
         DbRelation &columns_table = tables->get_table(table_name); // "runtime polymorphism"
         try {
+            DEBUG_OUT("SQLExec::create() - try\n");
             for (auto const &column : *statement->columns) {
                 string type;
                 if (column->type == ColumnDefinition::DataType::INT)
@@ -105,18 +112,23 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
                 columns_table.insert(&row);
             }
         } catch (DbRelationError &e) {
+            DEBUG_OUT("SQLExec::create() - catch\n");
             for (size_t i = 0; i < statement->columns->size(); i++) {
                 Handles *handles = columns_table.select(&table_record);
                 for (auto handle : *handles) {
                     columns_table.del(handle);
                 }
             }
+            DEBUG_OUT("SQLExec::create() - end (catch)\n");
             return new QueryResult("ERR CREATE: " + string(e.what()) + "\n");
         }
     } catch (DbRelationError &e) {
+        DEBUG_OUT("SQLExec::create() - catch\n");
         tables->del((*(tables->select(&table_record)))[0]); // get first record, FIXME: this looks bad
+        DEBUG_OUT("SQLExec::create() - end (catch)\n");
         return new QueryResult("ERR CREATE: " + string(e.what()) + "\n");
     }
+    DEBUG_OUT("SQLExec::create() - end (success)\n");
     return new QueryResult("Created " + table_name + "\n");
 }
 
