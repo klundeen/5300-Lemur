@@ -89,7 +89,15 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
     DEBUG_OUT("SQLExec::create() - begin\n");
     string table_name = string(statement->tableName);
     ValueDict table_record = {{"table_name", Value(table_name)}};
-    tables->insert(&table_record);
+
+    try {
+        DEBUG_OUT("SQLExec::create() - try\n");
+        tables->insert(&table_record);
+    } catch (DbRelationError &e) {
+        DEBUG_OUT_VAR("SQLExec::create() - catch: %s\n", e.what());
+        return new QueryResult("Error: DbRelationError: " + string(e.what()) + "\n");
+    }
+
     try {
         DEBUG_OUT("SQLExec::create() - try\n");
         DbRelation &columns_table = tables->get_table(table_name); // "runtime polymorphism"
@@ -112,21 +120,21 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
                 columns_table.insert(&row);
             }
         } catch (DbRelationError &e) {
-            DEBUG_OUT("SQLExec::create() - catch\n");
+            DEBUG_OUT_VAR("SQLExec::create() - catch: %s\n", e.what());
             for (size_t i = 0; i < statement->columns->size(); i++) {
                 Handles *handles = columns_table.select(&table_record);
                 for (auto handle : *handles) {
                     columns_table.del(handle);
                 }
             }
-            DEBUG_OUT("SQLExec::create() - end (catch)\n");
-            return new QueryResult("ERR CREATE: " + string(e.what()) + "\n");
+            DEBUG_OUT("SQLExec::create() - end catch\n");
+            return new QueryResult("Error: DbRelationError: " + string(e.what()) + "\n");
         }
     } catch (DbRelationError &e) {
-        DEBUG_OUT("SQLExec::create() - catch\n");
+        DEBUG_OUT_VAR("SQLExec::create() - catch: %s\n", e.what());
         tables->del((*(tables->select(&table_record)))[0]); // get first record, FIXME: this looks bad
-        DEBUG_OUT("SQLExec::create() - end (catch)\n");
-        return new QueryResult("ERR CREATE: " + string(e.what()) + "\n");
+        DEBUG_OUT("SQLExec::create() - end catch\n");
+        return new QueryResult("Error: DbRelationError: " + string(e.what()) + "\n");
     }
     DEBUG_OUT("SQLExec::create() - end (success)\n");
     return new QueryResult("Created " + table_name + "\n");
