@@ -114,7 +114,7 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
     // Add columns to _columns
     try {
         DEBUG_OUT("SQLExec::create() - try\n");
-        DbRelation &columns_table = tables->get_table(table_name); // "runtime polymorphism"
+        DbRelation &columns_table = tables->get_table(Columns::TABLE_NAME); // "runtime polymorphism"
         try {
             DEBUG_OUT("SQLExec::create() - try\n");
             for (auto const &column : *statement->columns) {

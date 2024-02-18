@@ -147,9 +147,13 @@ void Tables::get_columns(Identifier table_name, ColumnNames &column_names, Colum
 
 // Return a table for given table_name.
 DbRelation &Tables::get_table(Identifier table_name) {
+    DEBUG_OUT_VAR("Tables::get_table(%s) - begin\n", table_name.c_str());
     // if they are asking about a table we've once constructed, then just return that one
     if (Tables::table_cache.find(table_name) != Tables::table_cache.end())
+    {
+        DEBUG_OUT_VAR("Tables::get_table(%s) - specific end\n", table_name.c_str());
         return *Tables::table_cache[table_name];
+    }
 
     // otherwise assume it is a HeapTable (for now)
     ColumnNames column_names;
@@ -157,6 +161,7 @@ DbRelation &Tables::get_table(Identifier table_name) {
     get_columns(table_name, column_names, column_attributes);
     DbRelation *table = new HeapTable(table_name, column_names, column_attributes);
     Tables::table_cache[table_name] = table;
+    DEBUG_OUT_VAR("Tables::get_table(%s) - default end\n", table_name.c_str());
     return *table;
 }
 
