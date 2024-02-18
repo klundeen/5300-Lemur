@@ -20,7 +20,7 @@ void HeapTable::create() {
     DEBUG_OUT("HeapTable::create() - begin\n");
     this->file.create(); 
     DEBUG_OUT("HeapTable::create() - end\n");
-    }
+}
 
 void HeapTable::create_if_not_exists() {
     DEBUG_OUT("HeapTable::create_if_not_exists() - begin\n");
@@ -41,9 +41,11 @@ void HeapTable::open() { this->file.open(); }
 void HeapTable::close() { this->file.close(); }
 
 Handle HeapTable::insert(const ValueDict *row) {
+    DEBUG_OUT("HeapTable::insert() - begin\n");
     ValueDict *validatedRow = this->validate(row);
     Handle handle = this->append(validatedRow);
     delete validatedRow;
+    DEBUG_OUT("HeapTable::insert() - end\n");
     return handle;
 }
 
@@ -123,6 +125,7 @@ ValueDict *HeapTable::validate(const ValueDict *row) const {
 }
 
 Handle HeapTable::append(const ValueDict *row) {
+    DEBUG_OUT("HeapTable::append - begin\n");
     SlottedPage *page;
     Dbt *data = this->marshal(row);
     Handle handle;
@@ -131,6 +134,7 @@ Handle HeapTable::append(const ValueDict *row) {
     for (BlockID &blockID : *blockIDs) {
         page = this->file.get(blockID);
         try {
+            DEBUG_OUT("HeapTable::append - try\n");
             RecordID recordID = page->add(data);
             this->file.put(page);
             handle = Handle(blockID, recordID);
@@ -138,12 +142,14 @@ Handle HeapTable::append(const ValueDict *row) {
             delete page;
             break;
         } catch (DbBlockNoRoomError &e) {
+            DEBUG_OUT("HeapTable::append - catch\n");
             delete page;
         }
     }
 
     // no room in any existing blocks - create a new block
     if (!hasRoom) {
+        DEBUG_OUT("HeapTable::append - !hasRoom\n");
         page = this->file.get_new();
         RecordID recordID = page->add(data);
         BlockID blockID = page->get_block_id();
@@ -153,6 +159,8 @@ Handle HeapTable::append(const ValueDict *row) {
     }
     delete data;
     delete blockIDs;
+
+    DEBUG_OUT("HeapTable::append - end\n");
     return handle;
 }
 

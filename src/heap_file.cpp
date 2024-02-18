@@ -49,6 +49,7 @@ void HeapFile::close(void) {
 }
 
 SlottedPage *HeapFile::get_new(void) {
+    DEBUG_OUT("HeapFile::get_new() - begin\n");
     char block[DbBlock::BLOCK_SZ];
     std::memset(block, 0, sizeof(block));
     Dbt data(block, sizeof(block));
@@ -59,22 +60,27 @@ SlottedPage *HeapFile::get_new(void) {
     this->db.put(nullptr, &key, &data, 0);
     this->db.get(nullptr, &key, &data, 0);
 
+    DEBUG_OUT("HeapFile::get_new() - end\n");
     return new SlottedPage(data, this->last, true);
 }
 
 SlottedPage *HeapFile::get(BlockID block_id) {
+    DEBUG_OUT("HeapFile::get() - begin\n");
     Dbt data;
     Dbt key(&block_id, sizeof(block_id));
     this->db.get(nullptr, &key, &data, 0);
 
+    DEBUG_OUT("HeapFile::get() - end\n");
     return new SlottedPage(data, block_id);
 }
 
 void HeapFile::put(DbBlock *block) {
+    DEBUG_OUT("HeapFile::put() - begin\n");
     BlockID block_id = block->get_block_id();
     Dbt key(&block_id, sizeof(block_id));
 
     db.put(nullptr, &key, block->get_block(), 0);
+    DEBUG_OUT("HeapFile::put() - end\n");
 }
 
 BlockIDs *HeapFile::block_ids() const {
@@ -85,6 +91,7 @@ BlockIDs *HeapFile::block_ids() const {
 }
 
 void HeapFile::db_open(uint flags) {
+    DEBUG_OUT("HeapFile::db_open() - begin\n");
     this->db.set_message_stream(_DB_ENV->get_message_stream());
     this->db.set_error_stream(_DB_ENV->get_error_stream());
     this->db.set_re_len(DbBlock::BLOCK_SZ);
@@ -96,5 +103,5 @@ void HeapFile::db_open(uint flags) {
     this->db.stat(nullptr, &stat, DB_FAST_STAT);
     uint32_t bt_ndata = stat->bt_ndata;
     this->last = bt_ndata;
+    DEBUG_OUT("HeapFile::db_open() - end\n");
 }
-
