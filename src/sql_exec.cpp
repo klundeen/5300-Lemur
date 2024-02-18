@@ -4,7 +4,7 @@
  * @see "Seattle University, CPSC5300, Winter Quarter 2024"
  */
 #include "sql_exec.h"
-#define DEBUG_ENABLED
+// #define DEBUG_ENABLED
 #include "debug.h"
 
 using namespace std;
@@ -179,7 +179,7 @@ QueryResult *SQLExec::drop(const DropStatement *statement) {
     delete handles;
     delete col_handles;
 
-    string message = "Dropped " + table_name;
+    string message = "dropped " + table_name;
     DEBUG_OUT("SQLExec::drop() - end\n");
     return new QueryResult(message);
 }
