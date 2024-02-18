@@ -86,16 +86,6 @@ SQLExec::column_definition(const ColumnDefinition *col, Identifier &column_name,
 QueryResult *SQLExec::create(const CreateStatement *statement) {
     DEBUG_OUT("SQLExec::create() - begin\n");
 
-    ColumnNames names;
-    ColumnAttributes attributes;
-    for (ColumnDefinition *col : *statement->columns) {
-        Identifier column_name;
-        ColumnAttribute column_attribute;
-        column_definition(col, column_name, column_attribute);
-        names.push_back(column_name);
-        attributes.push_back(column_attribute);
-    }
-
     // Add table to _tables
     string table_name = string(statement->tableName);
     ValueDict table_record = {{"table_name", Value(table_name)}};
