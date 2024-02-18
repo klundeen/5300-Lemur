@@ -8,7 +8,7 @@
 #include <cstring>
 
 #include "heap_storage.h"
-#define DEBUG_ENABLED
+// #define DEBUG_ENABLED
 #include "debug.h"
 
 HeapTable::HeapTable(Identifier table_name, ColumnNames column_names,
@@ -34,11 +34,23 @@ void HeapTable::create_if_not_exists() {
     DEBUG_OUT("HeapTable::create_if_not_exists() - end\n");
 }
 
-void HeapTable::drop() { this->file.drop(); }
+void HeapTable::drop() {
+    DEBUG_OUT("HeapTable::drop() - begin\n");
+    this->file.drop();
+    DEBUG_OUT("HeapTable::drop() - end\n");
+}
 
-void HeapTable::open() { this->file.open(); }
+void HeapTable::open() {
+    DEBUG_OUT("HeapTable::open() - begin\n");
+    this->file.open();
+    DEBUG_OUT("HeapTable::open() - end\n");
+}
 
-void HeapTable::close() { this->file.close(); }
+void HeapTable::close() {
+    DEBUG_OUT("HeapTable::close() - begin\n");
+    this->file.close();
+    DEBUG_OUT("HeapTable::close() - end\n");
+}
 
 Handle HeapTable::insert(const ValueDict *row) {
     DEBUG_OUT("HeapTable::insert() - begin\n");

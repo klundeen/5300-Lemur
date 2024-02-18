@@ -143,24 +143,29 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
 
 // DROP ...
 QueryResult *SQLExec::drop(const DropStatement *statement) {
+    DEBUG_OUT("SQLExec::drop() - begin\n");
     string table_name = statement->name;
     if (table_name == "_tables" || table_name == "_columns") {
+        DEBUG_OUT("SQLExec::drop() - end throw\n");
         throw SQLExecError("Cannot drop a schema table");
     }
 
-    DbRelation &table = tables->get_table(table_name);
     ValueDict where;
     where["table_name"] = table_name;
-    Handles *handles = table.select(&where);
+    Handles *handles = tables->select(&where);
 
     if (handles->size() == 0) {
+        DEBUG_OUT("SQLExec::drop() - end throw\n");
+        delete handles;
         throw SQLExecError("Table does not exist");
     }
 
     // remove from _tables schema
+    DEBUG_OUT("SQLExec::drop() - remove from _tables\n");
     tables->del((*handles)[0]);
 
     // remove from _columns schema
+    DEBUG_OUT("SQLExec::drop() - remove from _columns\n");
     DbRelation &columns_table = tables->get_table(Columns::TABLE_NAME);
     Handles *col_handles = columns_table.select(&where);
 
@@ -168,12 +173,14 @@ QueryResult *SQLExec::drop(const DropStatement *statement) {
         columns_table.del(handle);
     }
 
+    DbRelation &table = tables->get_table(table_name);
     table.drop();
 
     delete handles;
     delete col_handles;
 
     string message = "Dropped " + table_name;
+    DEBUG_OUT("SQLExec::drop() - end\n");
     return new QueryResult(message);
 }
 

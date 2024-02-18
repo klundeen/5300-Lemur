@@ -31,19 +31,27 @@ void HeapFile::create(void) {
 }
 
 void HeapFile::drop(void) {
+    DEBUG_OUT("HeapFile::drop() - begin\n");
     this->close();
     _DB_ENV->dbremove(NULL, dbfilename.c_str(), NULL, 0);
     this->last = 0;
+    DEBUG_OUT("HeapFile::drop() - end\n");
 }
 
 void HeapFile::open(void) {
-    if (!this->closed) return;
+    DEBUG_OUT("HeapFile::open() - begin\n");
+    if (!this->closed){
+        return;
+    }
     this->db_open();
     this->closed = false;
+    DEBUG_OUT("HeapFile::open() - end\n");
 }
 
 void HeapFile::close(void) {
-    if (this->closed) return;
+    if (this->closed) {
+        return;
+    }
     db.close(0);
     this->closed = true;
 }

@@ -5,7 +5,7 @@
  */
 #include "schema_tables.h"
 #include "parse_tree_to_string.h"
-#define DEBUG_ENABLED
+// #define DEBUG_ENABLED
 #include "debug.h"
 
 
