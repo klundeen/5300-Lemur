@@ -160,24 +160,21 @@ QueryResult *SQLExec::drop(const DropStatement *statement) {
     }
 
     // remove from _tables schema
-    // DEBUG_OUT("SQLExec::drop() - remove from _tables\n");
-    // tables->del((*handles)[0]);
+    tables->del((*handles)[0]);
 
     // remove from _columns schema
-    // DEBUG_OUT("SQLExec::drop() - remove from _columns\n");
-    // DbRelation &columns_table = tables->get_table(Columns::TABLE_NAME);
-    // Handles *col_handles = columns_table.select(&where);
+    DbRelation &columns_table = tables->get_table(Columns::TABLE_NAME);
+    where.clear();
+    where["table_name"] = Value(table_name);
+    handles = columns_table.select(&where);
+    for (Handle handle : *handles) {
+        columns_table.del(handle);
+    }
+    delete handles;
 
-    // for (Handle &handle : *col_handles) {
-    //     columns_table.del(handle);
-    // }
-
+    // drop the table
     DbRelation &table = tables->get_table(table_name);
     table.drop();
-
-    delete handles;
-    delete col_handles;
-
     string message = "dropped " + table_name;
     DEBUG_OUT("SQLExec::drop() - end\n");
     return new QueryResult(message);
