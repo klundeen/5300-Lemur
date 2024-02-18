@@ -65,10 +65,14 @@ void SQLShell::run() {
                 // First, echo the command entered by the user
                 std::cout << this->echo(parser_result->getStatement(i)) << std::endl;
 
-                // Now, execute it using SQLExec
-                QueryResult *query_result = sql_exec->execute(parser_result->getStatement(i));
-                std::cout << *query_result;
-                delete query_result;
+                try {
+                    // Now, execute it using SQLExec
+                    QueryResult *query_result = sql_exec->execute(parser_result->getStatement(i));
+                    std::cout << *query_result;
+                    delete query_result;
+                } catch (SQLExecError &e) {
+                    cout << "Error: " << e.what() << endl;
+                }
             }
         } else {
             printf("Invalid SQL: %s\n", query.c_str());
