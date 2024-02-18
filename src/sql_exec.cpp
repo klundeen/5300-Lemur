@@ -147,7 +147,7 @@ QueryResult *SQLExec::drop(const DropStatement *statement) {
     string table_name = statement->name;
     if (table_name == "_tables" || table_name == "_columns") {
         DEBUG_OUT("SQLExec::drop() - end throw\n");
-        throw SQLExecError("Cannot drop a schema table");
+        throw SQLExecError("SQLExecError: Cannot drop a schema table");
     }
 
     ValueDict where;
@@ -157,7 +157,7 @@ QueryResult *SQLExec::drop(const DropStatement *statement) {
     if (handles->size() == 0) {
         DEBUG_OUT("SQLExec::drop() - end throw\n");
         delete handles;
-        throw SQLExecError("Table does not exist");
+        throw SQLExecError("SQLExecError: Table does not exist");
     }
 
     // remove from _tables schema
