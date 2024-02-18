@@ -4,7 +4,7 @@
  * @see "Seattle University, CPSC5300, Winter Quarter 2024"
  */
 #include "sql_exec.h"
-// #define DEBUG_ENABLED
+#define DEBUG_ENABLED
 #include "debug.h"
 
 using namespace std;
@@ -28,14 +28,9 @@ ostream &operator<<(ostream &out, const QueryResult &qres) {
             for (auto const &column_name: *qres.column_names) {
                 Value value = row->at(column_name);
                 switch (value.data_type) {
-                    case ColumnAttribute::INT:
-                        out << value.n;
-                        break;
-                    case ColumnAttribute::TEXT:
-                        out << "\"" << value.s << "\"";
-                        break;
-                    default:
-                        out << "???";
+                    case ColumnAttribute::INT:  out << value.n;                 break;
+                    case ColumnAttribute::TEXT: out << "\"" << value.s << "\""; break;
+                    default:                    out << "???";
                 }
                 out << " ";
             }
@@ -64,14 +59,10 @@ QueryResult *SQLExec::execute(const SQLStatement *statement) {
     try {
         DEBUG_OUT("SQLExec::execute() - try\n");
         switch (statement->type()) {
-            case kStmtCreate:
-                return create((const CreateStatement *) statement);
-            case kStmtDrop:
-                return drop((const DropStatement *) statement);
-            case kStmtShow:
-                return show((const ShowStatement *) statement);
-            default:
-                return new QueryResult("not implemented");
+            case kStmtCreate:   return create((const CreateStatement *) statement);
+            case kStmtDrop:     return drop((const DropStatement *) statement);
+            case kStmtShow:     return show((const ShowStatement *) statement);
+            default:            return new QueryResult("not implemented");
         }
     } catch (DbRelationError &e) {
         DEBUG_OUT("SQLExec::execute() - catch\n");
@@ -82,15 +73,32 @@ QueryResult *SQLExec::execute(const SQLStatement *statement) {
 
 void
 SQLExec::column_definition(const ColumnDefinition *col, Identifier &column_name, ColumnAttribute &column_attribute) {
-    throw SQLExecError("not implemented");  // FIXME
+    DEBUG_OUT("SQLExec::column_definition() - begin\n");
+    column_name = std::string(col->name);
+    switch (col->type) {
+        case ColumnDefinition::INT:     column_attribute.set_data_type(ColumnAttribute::INT);   break;
+        case ColumnDefinition::TEXT:    column_attribute.set_data_type(ColumnAttribute::TEXT);  break;
+        default:                        throw SQLExecError("Unknown column type");
+    }
+    DEBUG_OUT("SQLExec::column_definition() - end\n");
 }
 
 QueryResult *SQLExec::create(const CreateStatement *statement) {
     DEBUG_OUT("SQLExec::create() - begin\n");
-    string table_name = string(statement->tableName);
-    ValueDict table_record = {{"table_name", Value(table_name)}};
+
+    ColumnNames names;
+    ColumnAttributes attributes;
+    for (ColumnDefinition *col : *statement->columns) {
+        Identifier column_name;
+        ColumnAttribute column_attribute;
+        column_definition(col, column_name, column_attribute);
+        names.push_back(column_name);
+        attributes.push_back(column_attribute);
+    }
 
     // Add table to _tables
+    string table_name = string(statement->tableName);
+    ValueDict table_record = {{"table_name", Value(table_name)}};
     try {
         DEBUG_OUT("SQLExec::create() - try\n");
         tables->insert(&table_record);
@@ -110,6 +118,7 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
         try {
             DEBUG_OUT("SQLExec::create() - try\n");
             for (auto const &column : *statement->columns) {
+                DEBUG_OUT("SQLExec::create() - for\n");
                 string type;
                 if (column->type == ColumnDefinition::DataType::INT)
                     type = "INT";
@@ -123,6 +132,7 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
                 row["table_name"] = Value(table_name);
                 row["column_name"] = Value(column->name);
                 row["data_type"] = Value(type);
+                DEBUG_OUT("SQLExec::create() - insert\n");
                 columns_table.insert(&row);
             }
         } catch (DbRelationError &e) {
@@ -185,12 +195,9 @@ QueryResult *SQLExec::drop(const DropStatement *statement) {
 
 QueryResult *SQLExec::show(const ShowStatement *statement) {
     switch (statement->type) {
-        case ShowStatement::EntityType::kTables:
-            return show_tables();
-        case ShowStatement::EntityType::kColumns:
-            return show_columns(statement);
-        default:
-            return new QueryResult("Cannot show unknown entity type!");
+        case ShowStatement::EntityType::kTables:    return show_tables();
+        case ShowStatement::EntityType::kColumns:   return show_columns(statement);
+        default:                                    return new QueryResult("Cannot show unknown entity type!");
     }
 }
 

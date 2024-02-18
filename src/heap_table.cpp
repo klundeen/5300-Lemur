@@ -8,7 +8,7 @@
 #include <cstring>
 
 #include "heap_storage.h"
-// #define DEBUG_ENABLED
+#define DEBUG_ENABLED
 #include "debug.h"
 
 HeapTable::HeapTable(Identifier table_name, ColumnNames column_names,

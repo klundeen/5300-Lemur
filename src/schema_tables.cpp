@@ -5,7 +5,7 @@
  */
 #include "schema_tables.h"
 #include "parse_tree_to_string.h"
-// #define DEBUG_ENABLED
+#define DEBUG_ENABLED
 #include "debug.h"
 
 
@@ -122,6 +122,7 @@ void Tables::del(Handle handle) {
 
 // Return a list of column names and column attributes for given table.
 void Tables::get_columns(Identifier table_name, ColumnNames &column_names, ColumnAttributes &column_attributes) {
+    DEBUG_OUT("Tables::get_columns() - begin\n");
     // SELECT * FROM _columns WHERE table_name = <table_name>
     ValueDict where;
     where["table_name"] = table_name;
@@ -141,6 +142,7 @@ void Tables::get_columns(Identifier table_name, ColumnNames &column_names, Colum
         delete row;
     }
     delete handles;
+    DEBUG_OUT("Tables::get_columns() - end\n");
 }
 
 // Return a table for given table_name.
@@ -209,21 +211,24 @@ void Columns::create() {
     insert(&row);
     row["column_name"] = Value("data_type");
     insert(&row);
+
     DEBUG_OUT("Columns::create() - end\n");
 }
 
 // Manually check that (table_name, column_name) is unique.
 Handle Columns::insert(const ValueDict *row) {
+    DEBUG_OUT("Columns::insert() - begin\n");
     // Check that datatype is acceptable
-    if (!is_acceptable_identifier(row->at("table_name").s))
+    if (!is_acceptable_identifier(row->at("table_name").s)) {
         throw DbRelationError("unacceptable table name '" + row->at("table_name").s + "'");
-    if (!is_acceptable_identifier(row->at("column_name").s))
+    }
+    if (!is_acceptable_identifier(row->at("column_name").s)) {
         throw DbRelationError("unacceptable column name '" + row->at("column_name").s + "'");
-    if (!is_acceptable_data_type(row->at("data_type").s))
+    }
+    if (!is_acceptable_data_type(row->at("data_type").s)) {
         throw DbRelationError("unacceptable data type '" + row->at("data_type").s + "'");
+    }
 
-    // Try SELECT * FROM _columns WHERE table_name = row["table_name"] AND column_name = column_name["column_name"]
-    // and it should return nothing
     ValueDict where;
     where["table_name"] = row->at("table_name");
     where["column_name"] = row->at("column_name");
@@ -232,8 +237,10 @@ Handle Columns::insert(const ValueDict *row) {
     delete handles;
     if (!unique)
     {
+        DEBUG_OUT("Columns::insert() - !unique\n");
         throw DbRelationError("duplicate column " + row->at("table_name").s + "." + row->at("column_name").s);
     }
 
+    DEBUG_OUT("Columns::insert() - end\n");
     return HeapTable::insert(row);
 }
