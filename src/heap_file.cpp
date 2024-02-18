@@ -76,12 +76,12 @@ SlottedPage *HeapFile::get_new(void) {
 }
 
 SlottedPage *HeapFile::get(BlockID block_id) {
-    DEBUG_OUT("HeapFile::get() - begin\n");
+    DEBUG_OUT_VAR("HeapFile::get(%d) - begin\n", block_id);
     Dbt data;
     Dbt key(&block_id, sizeof(block_id));
     this->db.get(nullptr, &key, &data, 0);
 
-    DEBUG_OUT("HeapFile::get() - end\n");
+    DEBUG_OUT_VAR("HeapFile::get(%d) - end\n", block_id);
     return new SlottedPage(data, block_id);
 }
 
@@ -95,10 +95,11 @@ void HeapFile::put(DbBlock *block) {
 }
 
 BlockIDs *HeapFile::block_ids() const {
-    BlockIDs *blockIds = new BlockIDs();
-    for (RecordID i = 1; i <= this->last; i++) blockIds->push_back(i);
-
-    return blockIds;
+    BlockIDs *vec = new BlockIDs();
+    for (BlockID block_id = 1; block_id <= this->last; block_id++) {
+        vec->push_back(block_id);
+    }
+    return vec;
 }
 
 uint32_t HeapFile::get_block_count() {

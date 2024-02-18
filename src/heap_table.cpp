@@ -60,7 +60,7 @@ Handle HeapTable::insert(const ValueDict *row) {
     ValueDict *validatedRow = this->validate(row);
     Handle handle = this->append(validatedRow);
     delete validatedRow;
-    DEBUG_OUT("HeapTable::insert() - end\n");
+    DEBUG_OUT_VAR("HeapTable::insert() - end (block: %d, record: %d)\n", handle.first, handle.second);
     return handle;
 }
 
@@ -69,13 +69,33 @@ void HeapTable::update(const Handle handle, const ValueDict *new_values) {
 }
 
 void HeapTable::del(const Handle handle) {
-    DEBUG_OUT("HeapTable::del() - begin\n");
+    DEBUG_OUT_VAR("HeapTable::del(block: %d, record: %d)\n", handle.first, handle.second);
     open();
     BlockID block_id = handle.first;
     RecordID record_id = handle.second;
     SlottedPage *block = this->file.get(block_id);
+
+#ifdef DEBUG_ENABLED
+    DEBUG_OUT_VAR("Records in block %d: ( ", block_id);
+    RecordIDs *record_ids = block->ids();
+    for (auto const &record_id: *record_ids) {
+        printf("%d ", record_id);
+    }
+    printf(")\n");
+#endif
+
     block->del(record_id);
     this->file.put(block);
+
+#ifdef DEBUG_ENABLED
+    DEBUG_OUT_VAR("Records remaining in block %d: ( ", block_id);
+    record_ids = block->ids();
+    for (auto const &record_id: *record_ids) {
+        printf("%d ", record_id);
+    }
+    printf(")\n");
+#endif
+
     delete block;
     DEBUG_OUT("HeapTable::del() - end\n");
 }
