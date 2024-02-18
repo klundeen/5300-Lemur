@@ -57,7 +57,10 @@ SlottedPage *HeapFile::get_new(void) {
     BlockID block_id = ++this->last;
     Dbt key(&block_id, sizeof(block_id));
 
+    // write out an empty block and read it back in so Berkeley DB is managing the memory
+    SlottedPage *page = new SlottedPage(data, this->last, true);
     this->db.put(nullptr, &key, &data, 0);
+    delete page;
     this->db.get(nullptr, &key, &data, 0);
 
     DEBUG_OUT("HeapFile::get_new() - end\n");
@@ -90,18 +93,29 @@ BlockIDs *HeapFile::block_ids() const {
     return blockIds;
 }
 
-void HeapFile::db_open(uint flags) {
-    DEBUG_OUT("HeapFile::db_open() - begin\n");
-    this->db.set_message_stream(_DB_ENV->get_message_stream());
-    this->db.set_error_stream(_DB_ENV->get_error_stream());
-    this->db.set_re_len(DbBlock::BLOCK_SZ);
-
-    this->dbfilename = this->name + ".db";
-    db.open(NULL, this->dbfilename.c_str(), NULL, DB_RECNO, flags, 0644);
-
+uint32_t HeapFile::get_block_count() {
+    DEBUG_OUT("HeapFile::get_block_count() - begin\n");
     DB_BTREE_STAT *stat;
     this->db.stat(nullptr, &stat, DB_FAST_STAT);
     uint32_t bt_ndata = stat->bt_ndata;
-    this->last = bt_ndata;
+    free(stat);
+    DEBUG_OUT("HeapFile::get_block_count() - end\n");
+    return bt_ndata;
+}
+
+void HeapFile::db_open(uint flags) {
+    DEBUG_OUT("HeapFile::db_open() - begin\n");
+    if (!this->closed)
+    {
+        DEBUG_OUT("HeapFile::db_open() - !this->closed\n");
+        return;
+    }
+
+    DEBUG_OUT_VAR("HeapFile::db_open() - attempting open on %s\n", this->dbfilename.c_str());
+    this->db.set_re_len(DbBlock::BLOCK_SZ); // record length - will be ignored if file already exists
+    this->db.open(nullptr, this->dbfilename.c_str(), nullptr, DB_RECNO, flags, 0644);
+
+    this->last = flags ? 0 : get_block_count();
+    this->closed = false;
     DEBUG_OUT("HeapFile::db_open() - end\n");
 }

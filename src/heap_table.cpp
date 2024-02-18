@@ -42,6 +42,7 @@ void HeapTable::close() { this->file.close(); }
 
 Handle HeapTable::insert(const ValueDict *row) {
     DEBUG_OUT("HeapTable::insert() - begin\n");
+    this->open();
     ValueDict *validatedRow = this->validate(row);
     Handle handle = this->append(validatedRow);
     delete validatedRow;
@@ -125,43 +126,26 @@ ValueDict *HeapTable::validate(const ValueDict *row) const {
 }
 
 Handle HeapTable::append(const ValueDict *row) {
-    DEBUG_OUT("HeapTable::append - begin\n");
-    SlottedPage *page;
-    Dbt *data = this->marshal(row);
-    Handle handle;
-    bool hasRoom = false;
-    BlockIDs *blockIDs = this->file.block_ids();
-    for (BlockID &blockID : *blockIDs) {
-        page = this->file.get(blockID);
-        try {
-            DEBUG_OUT("HeapTable::append - try\n");
-            RecordID recordID = page->add(data);
-            this->file.put(page);
-            handle = Handle(blockID, recordID);
-            hasRoom = true;
-            delete page;
-            break;
-        } catch (DbBlockNoRoomError &e) {
-            DEBUG_OUT("HeapTable::append - catch\n");
-            delete page;
-        }
+    DEBUG_OUT("HeapTable::append() - begin\n");
+    Dbt *data = marshal(row);
+    SlottedPage *block = this->file.get(this->file.get_last_block_id());
+    RecordID record_id;
+    try {
+        DEBUG_OUT("HeapTable::append() - try\n");
+        record_id = block->add(data);
+    } catch (DbBlockNoRoomError &e) {
+        DEBUG_OUT("HeapTable::append() - catch\n");
+        // need a new block
+        delete block;
+        block = this->file.get_new();
+        record_id = block->add(data);
     }
-
-    // no room in any existing blocks - create a new block
-    if (!hasRoom) {
-        DEBUG_OUT("HeapTable::append - !hasRoom\n");
-        page = this->file.get_new();
-        RecordID recordID = page->add(data);
-        BlockID blockID = page->get_block_id();
-        this->file.put(page);
-        delete page;
-        handle = Handle(blockID, recordID);
-    }
+    this->file.put(block);
+    delete block;
+    delete[] (char *) data->get_data();
     delete data;
-    delete blockIDs;
-
-    DEBUG_OUT("HeapTable::append - end\n");
-    return handle;
+    DEBUG_OUT("HeapTable::append() - end\n");
+    return Handle(this->file.get_last_block_id(), record_id);
 }
 
 Dbt *HeapTable::marshal(const ValueDict *row) const {

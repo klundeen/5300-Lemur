@@ -90,6 +90,7 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
     string table_name = string(statement->tableName);
     ValueDict table_record = {{"table_name", Value(table_name)}};
 
+    // Add table to _tables
     try {
         DEBUG_OUT("SQLExec::create() - try\n");
         tables->insert(&table_record);
@@ -98,6 +99,11 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
         return new QueryResult("Error: DbRelationError: " + string(e.what()) + "\n");
     }
 
+    // Create table
+    DbRelation &table = tables->get_table(table_name);
+    table.create();
+
+    // Add columns to _columns
     try {
         DEBUG_OUT("SQLExec::create() - try\n");
         DbRelation &columns_table = tables->get_table(table_name); // "runtime polymorphism"
@@ -136,6 +142,7 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
         DEBUG_OUT("SQLExec::create() - end catch\n");
         return new QueryResult("Error: DbRelationError: " + string(e.what()) + "\n");
     }
+
     DEBUG_OUT("SQLExec::create() - end (success)\n");
     return new QueryResult("Created " + table_name + "\n");
 }
