@@ -172,6 +172,7 @@ QueryResult *SQLExec::show_tables() {
     ColumnNames *names = new ColumnNames();
     ColumnAttributes *attribs = new ColumnAttributes();
     tables->get_columns(Tables::TABLE_NAME, *names, *attribs);
+
     ValueDicts *rows = new ValueDicts();
     Handles *handles = tables->select();
     for (Handle &handle : *handles) {
@@ -194,19 +195,34 @@ QueryResult *SQLExec::show_tables() {
 
 QueryResult *SQLExec::show_columns(const ShowStatement *statement) {
     DEBUG_OUT("SQLExec::show_columns() - begin\n");
-    string table_name = string(statement->tableName);
+
     ColumnNames *names = new ColumnNames();
+    names->push_back("table_name");
+    names->push_back("column_name");
+    names->push_back("data_type");
+
     ColumnAttributes *attribs = new ColumnAttributes();
-    tables->get_columns(table_name, *names, *attribs);
+    ColumnAttribute column_attr(ColumnAttribute::DataType::TEXT);
+    for (size_t i = 0; i < names->size(); i++)
+    {
+        attribs->push_back(column_attr);
+    }
+
+    ValueDict target_table;
+    target_table["table_name"] = Value(statement->tableName);
+
+    DbRelation &col_table = SQLExec::tables->get_table(Columns::TABLE_NAME);
+    Handles *col_handles = col_table.select(&target_table);
 
     ValueDicts *rows = new ValueDicts();
-    for (Identifier name : *names) {
-        ValueDict row;
-        row["column_name"] = name;
-        rows->push_back(&row);
+    for (auto const &handle : *col_handles)
+    {
+        ValueDict *row = col_table.project(handle, names);
+        rows->push_back(row);
     }
 
     string message = "successfully returned " + std::to_string(rows->size()) + " rows";
+
     DEBUG_OUT_VAR("SQLExec::show_columns() - names->size(): %ld\n", names->size());
     DEBUG_OUT_VAR("SQLExec::show_columns() - attribs->size(): %ld\n", attribs->size());
     DEBUG_OUT_VAR("SQLExec::show_columns() - rows->size(): %ld\n", rows->size());
