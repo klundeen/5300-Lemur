@@ -95,12 +95,12 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
         table_handle = tables->insert(&table_record);
     } catch (DbRelationError &e) {
         DEBUG_OUT_VAR("SQLExec::create() - catch: %s\n", e.what());
-        return new QueryResult("Error: DbRelationError: " + string(e.what()));
+        throw e;
     }
 
     // Add columns to _columns
     DbRelation &columns_table = tables->get_table(Columns::TABLE_NAME);
-    Handles column_handles;
+    Handles *column_handles = new Handles();
     try {
         DEBUG_OUT("SQLExec::create() - try\n");
         for (auto const &column : *statement->columns) {
@@ -120,18 +120,18 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
             row["data_type"] = Value(type);
             DEBUG_OUT("SQLExec::create() - insert\n");
             Handle column_handle = columns_table.insert(&row);
-            column_handles.push_back(column_handle);
+            column_handles->push_back(column_handle);
         }
     } catch (DbRelationError &e) {
         DEBUG_OUT_VAR("SQLExec::create() - catch: %s\n", e.what());
         // Something prevented adding columns to _columns,
         // must remove table, as well as columns we did add.
         tables->del(table_handle);
-        for (auto handle : column_handles) {
+        for (auto const &handle : *column_handles) {
             columns_table.del(handle);
         }
         DEBUG_OUT("SQLExec::create() - end catch\n");
-        return new QueryResult("Error: DbRelationError: " + string(e.what()));
+        throw e;
     }
 
     DbRelation &table = tables->get_table(table_name);
