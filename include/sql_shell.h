@@ -29,6 +29,11 @@ class SQLShell {
     virtual void run();
 
     /**
+     * Echo a SQL command back to the interface
+     */
+    virtual std::string echo(const hsql::SQLStatement *stmt);
+
+    /**
      * Run automatic test on SQL Parser
      */
     void testSQLParser();

@@ -42,7 +42,7 @@ ostream &operator<<(ostream &out, const QueryResult &qres) {
             out << endl;
         }
     }
-    out << qres.message;
+    out << qres.message << "\n";
     DEBUG_OUT("operator<< - end\n");
     return out;
 }
@@ -181,10 +181,12 @@ QueryResult *SQLExec::show_tables() {
         }
         rows->push_back(row);
     }
-    string message = "successfully returned " + std::to_string(rows->size()) + " rows\n";
+    string message = "successfully returned " + std::to_string(rows->size()) + " rows";
     DEBUG_OUT_VAR("SQLExec::show_tables() - msg: %s\n", message.c_str());
     DEBUG_OUT_VAR("SQLExec::show_tables() - names: %ld\n", names->size());
     DEBUG_OUT_VAR("SQLExec::show_tables() - attribs: %ld\n", attribs->size());
+    DEBUG_OUT_VAR("SQLExec::show_tables() - message: %s\n", message.c_str());
+
     delete handles;
     DEBUG_OUT("SQLExec::show_tables() - end\n");
     return new QueryResult(names, attribs, rows, message);
@@ -196,8 +198,6 @@ QueryResult *SQLExec::show_columns(const ShowStatement *statement) {
     ColumnNames *names = new ColumnNames();
     ColumnAttributes *attribs = new ColumnAttributes();
     tables->get_columns(table_name, *names, *attribs);
-    DEBUG_OUT_VAR("SQLExec::show_columns() - names->size(): %ld\n", names->size());
-    DEBUG_OUT_VAR("SQLExec::show_columns() - attribs->size(): %ld\n", attribs->size());
 
     ValueDicts *rows = new ValueDicts();
     for (Identifier name : *names) {
@@ -205,9 +205,13 @@ QueryResult *SQLExec::show_columns(const ShowStatement *statement) {
         row["column_name"] = name;
         rows->push_back(&row);
     }
-    DEBUG_OUT_VAR("SQLExec::show_columns() - rows->size(): %ld\n", rows->size());
 
-    string message = "successfully returned " + std::to_string(rows->size()) + " rows\n";
+    string message = "successfully returned " + std::to_string(rows->size()) + " rows";
+    DEBUG_OUT_VAR("SQLExec::show_columns() - names->size(): %ld\n", names->size());
+    DEBUG_OUT_VAR("SQLExec::show_columns() - attribs->size(): %ld\n", attribs->size());
+    DEBUG_OUT_VAR("SQLExec::show_columns() - rows->size(): %ld\n", rows->size());
+    DEBUG_OUT_VAR("SQLExec::show_columns() - message: %s\n", message.c_str());
+
     DEBUG_OUT("SQLExec::show_columns() - end\n");
     return new QueryResult(names, attribs, rows, message);
 }

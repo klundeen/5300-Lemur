@@ -62,8 +62,10 @@ void SQLShell::run() {
         if (parser_result->isValid()) {
             for (uint i = 0; i < parser_result->size(); ++i)
             {
-                // printf("%s\n", this->execute(result->getStatement(i)).c_str());
-                // this->execute(result->getStatement(i));
+                // First, echo the command entered by the user
+                std::cout << this->echo(parser_result->getStatement(i)) << std::endl;
+
+                // Now, execute it using SQLExec
                 QueryResult *query_result = sql_exec->execute(parser_result->getStatement(i));
                 std::cout << *query_result << std::endl;
                 delete query_result;
@@ -74,6 +76,60 @@ void SQLShell::run() {
         delete parser_result;
         delete sql_exec;
     }
+}
+
+string SQLShell::echo(const hsql::SQLStatement *stmt) {
+    stringstream ss;
+    if (stmt->type() == kStmtSelect) {
+        ss << "SELECT ";
+        int count = ((SelectStatement *)stmt)->selectList->size();
+        for (Expr *expr : *((SelectStatement *)stmt)->selectList) {
+            this->printExpression(expr, ss);
+            if (--count) {
+                ss << ",";
+            }
+            ss << " ";
+        }
+
+        ss << "FROM ";
+
+        this->printTableRefInfo(((SelectStatement *)stmt)->fromTable, ss);
+
+        if (((SelectStatement *)stmt)->whereClause != NULL) {
+            ss << " WHERE ";
+            this->printExpression(((SelectStatement *)stmt)->whereClause, ss);
+        }
+    }
+
+    if (stmt->type() == kStmtCreate) {
+        ss << "CREATE TABLE " << ((CreateStatement *)stmt)->tableName;
+
+        ss << " (";
+        int count = ((CreateStatement *)stmt)->columns->size();
+        for (auto col : *((CreateStatement *)stmt)->columns) {
+            ss << this->columnDefinitionToString(col);
+            if (--count) {
+                ss << ", ";
+            }
+        }
+        ss << ")";
+    }
+
+    if (stmt->type() == kStmtShow) {
+        ss << "SHOW ";
+        ShowStatement::EntityType type = ((ShowStatement *)stmt)->type;
+        switch(type) {
+            case ShowStatement::EntityType::kTables:
+                ss << "TABLES";
+                break;
+            case ShowStatement::EntityType::kColumns:
+                ss << "COLUMNS FROM " << ((ShowStatement *)stmt)->tableName;
+            default:
+                break;
+        }
+    }
+
+    return ss.str();
 }
 
 
