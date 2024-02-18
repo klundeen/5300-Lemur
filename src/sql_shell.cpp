@@ -35,9 +35,7 @@ void SQLShell::initializeEnv(const char *envHome, DbEnv *env) {
         exit(1);
     }
     _DB_ENV = env;
-    DEBUG_OUT("before init\n");
     initialize_schema_tables();
-    DEBUG_OUT("after init\n");
     this->initialized = true;
     printf("(sql5300: running with database environment at %s)\n", envHome);
 }
@@ -73,9 +71,9 @@ void SQLShell::run() {
 string SQLShell::execute(const SQLStatement *stmt) {
     // outsource execute to SQLExec
     // could refactor this so that we don't even need to have SQLShell::Exec at all
+    DEBUG_OUT("SQLShell::execute() - begin\n");
     SQLExec *sql_exec = new SQLExec();
     QueryResult *result = sql_exec->execute(stmt);
-    DEBUG_OUT("SQLShell here 1\n");
     std::cout << *result << std::endl;
     return "hello";
 }

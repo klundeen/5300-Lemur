@@ -17,20 +17,21 @@ HeapTable::HeapTable(Identifier table_name, ColumnNames column_names,
       file(table_name) {}
 
 void HeapTable::create() { 
-    DEBUG_OUT("create_ 1\n");
+    DEBUG_OUT("HeapTable::create() - begin\n");
     this->file.create(); 
-    DEBUG_OUT("create_ 2\n");
+    DEBUG_OUT("HeapTable::create() - end\n");
     }
 
 void HeapTable::create_if_not_exists() {
+    DEBUG_OUT("HeapTable::create_if_not_exists() - begin\n");
     try {
-        DEBUG_OUT("create_if 1\n");
+        DEBUG_OUT("HeapTable::create_if_not_exists() - try\n");
         this->file.open();
     } catch (DbException &e) {  // DBNoSuchFileError
-        DEBUG_OUT("create_if 2\n");
+        DEBUG_OUT("HeapTable::create_if_not_exists() - catch\n");
         this->create();
-        DEBUG_OUT("create_if 3\n");
     }
+    DEBUG_OUT("HeapTable::create_if_not_exists() - end\n");
 }
 
 void HeapTable::drop() { this->file.drop(); }

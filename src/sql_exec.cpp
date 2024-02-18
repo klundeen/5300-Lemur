@@ -15,8 +15,9 @@ Tables *SQLExec::tables = nullptr;
 
 // make query result be printable
 ostream &operator<<(ostream &out, const QueryResult &qres) {
+    DEBUG_OUT("operator<< - begin\n");
     if (qres.column_names != nullptr) {
-        DEBUG_OUT("SQLExec oStream 1\n");
+        DEBUG_OUT("operator - column_names != nullptr\n");
         for (auto const &column_name: *qres.column_names)
             out << column_name << " ";
         out << endl << "+";
@@ -24,12 +25,8 @@ ostream &operator<<(ostream &out, const QueryResult &qres) {
             out << "----------+";
         out << endl;
         for (auto const &row: *qres.rows) {
-            DEBUG_OUT_VAR("%lu\n", (*qres.rows).size());
             for (auto const &column_name: *qres.column_names) {
-                DEBUG_OUT_VAR("%s\n", column_name.c_str());
-                DEBUG_OUT("SQLExec oStream 2\n");
                 Value value = row->at(column_name);
-                DEBUG_OUT("SQLExec oStream 3\n");
                 switch (value.data_type) {
                     case ColumnAttribute::INT:
                         out << value.n;
@@ -46,6 +43,7 @@ ostream &operator<<(ostream &out, const QueryResult &qres) {
         }
     }
     out << qres.message;
+    DEBUG_OUT("operator<< - end\n");
     return out;
 }
 
@@ -170,11 +168,10 @@ QueryResult *SQLExec::show(const ShowStatement *statement) {
 }
 
 QueryResult *SQLExec::show_tables() {
+    DEBUG_OUT("SQLExec::show_tables() - begin\n");
     ColumnNames *names = new ColumnNames();
     ColumnAttributes *attribs = new ColumnAttributes();
-    DEBUG_OUT("SQLExec Here 1\n");
     tables->get_columns(Tables::TABLE_NAME, *names, *attribs);
-    DEBUG_OUT("SQLExec Here 2\n");
     ValueDicts *rows = new ValueDicts();
     Handles *handles = tables->select();
     for (Handle &handle : *handles) {
@@ -184,23 +181,23 @@ QueryResult *SQLExec::show_tables() {
         }
         rows->push_back(row);
     }
-    DEBUG_OUT("SQLExec Here 3\n");
     string message = "succesfully returned " + std::to_string(rows->size()) + " rows";
-    DEBUG_OUT_VAR("SQLExec show_tables msg: %s\n", message.c_str());
-    DEBUG_OUT_VAR("SQLExec show_tables names: %ld\n", names->size());
-    DEBUG_OUT_VAR("SQLExec show_tables attribs: %ld\n", attribs->size());
+    DEBUG_OUT_VAR("SQLExec::show_tables() - msg: %s\n", message.c_str());
+    DEBUG_OUT_VAR("SQLExec::show_tables() - names: %ld\n", names->size());
+    DEBUG_OUT_VAR("SQLExec::show_tables() - attribs: %ld\n", attribs->size());
     delete handles;
-    DEBUG_OUT("SQLExec Here 4\n");
+    DEBUG_OUT("SQLExec::show_tables() - end\n");
     return new QueryResult(names, attribs, rows, message);
 }
 
 QueryResult *SQLExec::show_columns(const ShowStatement *statement) {
+    DEBUG_OUT("SQLExec::show_columns() - begin\n");
     string table_name = string(statement->tableName);
     ColumnNames *names = new ColumnNames();
     ColumnAttributes *attribs = new ColumnAttributes();
     tables->get_columns(table_name, *names, *attribs);
-    DEBUG_OUT_VAR("LENGTH OF ROWS IN ColumnNames: %ld\n", names->size());
-    DEBUG_OUT_VAR("LENGTH OF ROWS IN ColumnAttributes: %ld\n", attribs->size());
+    DEBUG_OUT_VAR("SQLExec::show_columns() - names->size(): %ld\n", names->size());
+    DEBUG_OUT_VAR("SQLExec::show_columns() - attribs->size(): %ld\n", attribs->size());
 
     ValueDicts *rows = new ValueDicts();
     for (Identifier name : *names) {
@@ -208,11 +205,9 @@ QueryResult *SQLExec::show_columns(const ShowStatement *statement) {
         row["column_name"] = name;
         rows->push_back(&row);
     }
-    DEBUG_OUT_VAR("LENGTH OF ROWS IN COLUMNS: %ld\n", rows->size());
+    DEBUG_OUT_VAR("SQLExec::show_columns() - rows->size(): %ld\n", rows->size());
 
     string message = "succesfully returned " + std::to_string(rows->size()) + " rows";
-
+    DEBUG_OUT("SQLExec::show_columns() - end\n");
     return new QueryResult(names, attribs, rows, message);
 }
-
-

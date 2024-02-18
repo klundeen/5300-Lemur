@@ -21,16 +21,13 @@ HeapFile::HeapFile(string name) : DbFile(name), dbfilename(""), last(0), closed(
 }
 
 void HeapFile::create(void) {
-    DEBUG_OUT("HF Create1\n");
+    DEBUG_OUT("HeapFile::create() - begin\n");
     this->db_open(DB_CREATE | DB_EXCL);
-    DEBUG_OUT("HF Create2\n");
     SlottedPage *page = this->get_new();  // get a new block to start the file
-    DEBUG_OUT("HF Create3\n");
     this->put(page);
-    DEBUG_OUT("HF Create4\n");
     delete page;
     this->closed = false;
-    DEBUG_OUT("HF Create5\n");
+    DEBUG_OUT("HeapFile::create() - end\n");
 }
 
 void HeapFile::drop(void) {

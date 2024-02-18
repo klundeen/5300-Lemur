@@ -159,7 +159,7 @@ bool test_heap_table() {
     table.insert(&row);
     std::cout << "Table Insertion OK" << std::endl;
     Handles *handles = table.select();
-    std::cout << "Table Selection OK" << handles->size() << std::endl;
+    std::cout << "Table Selection OK (handles->size: " << handles->size() << ")" << std::endl;
     ValueDict *result = table.project((*handles)[0]);
     std::cout << "Table Projection OK" << std::endl;
 

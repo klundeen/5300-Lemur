@@ -10,17 +10,14 @@
 
 
 void initialize_schema_tables() {
-    DEBUG_OUT("Before creating tables\n");
+    DEBUG_OUT("initialize_schema_tables() - begin\n");
     Tables tables;
-    DEBUG_OUT("After creating tables 1\n");
     tables.create_if_not_exists();
-    DEBUG_OUT("After creating tables 2\n");
     tables.close();
-    DEBUG_OUT("After creating tables 3\n");
     Columns columns;
     columns.create_if_not_exists();
     columns.close();
-    DEBUG_OUT("After creating columns\n");
+    DEBUG_OUT("initialize_schema_tables() - end\n");
 }
 
 // Not terribly useful since the parser weeds most of these out
@@ -81,27 +78,29 @@ Tables::Tables() : HeapTable(TABLE_NAME, COLUMN_NAMES(), COLUMN_ATTRIBUTES()) {
 
 // Create the file and also, manually add schema tables.
 void Tables::create() {
-    DEBUG_OUT("get in here??? create\n");
+    DEBUG_OUT("Tables::create - begin\n");
     HeapTable::create();
-    DEBUG_OUT("create table1\n");
     ValueDict row;
     row["table_name"] = Value("_tables");
-    DEBUG_OUT("create table2\n");
     insert(&row);
     row["table_name"] = Value("_columns");
-    DEBUG_OUT("create table3\n");
     insert(&row);
-    DEBUG_OUT("create table4\n");
+    DEBUG_OUT("Tables::create - end\n");
 }
 
 // Manually check that table_name is unique.
 Handle Tables::insert(const ValueDict *row) {
-    // Try SELECT * FROM _tables WHERE table_name = row["table_name"] and it should return nothing
+    DEBUG_OUT("Tables::insert - begin\n");
+    // Note: Try SELECT * FROM _tables WHERE table_name = row["table_name"]
+    //       It should return nothing.
     Handles *handles = select(row);
     bool unique = handles->empty();
     delete handles;
     if (!unique)
+    {
         throw DbRelationError(row->at("table_name").s + " already exists");
+    }
+    DEBUG_OUT("Tables::insert - end\n");
     return HeapTable::insert(row);
 }
 
@@ -195,25 +194,21 @@ Columns::Columns() : HeapTable(TABLE_NAME, COLUMN_NAMES(), COLUMN_ATTRIBUTES()) 
 
 // Create the file and also, manually add schema columns.
 void Columns::create() {
-    DEBUG_OUT("here 1\n");
+    DEBUG_OUT("Columns::create() - begin\n");
     HeapTable::create();
     ValueDict row;
     row["data_type"] = Value("TEXT");  // all these are TEXT fields
     row["table_name"] = Value("_tables");
     row["column_name"] = Value("table_name");
-    DEBUG_OUT("here 2\n");
     insert(&row);
     row["table_name"] = Value("_columns");
     row["column_name"] = Value("table_name");
-    DEBUG_OUT("here 3\n");
     insert(&row);
-    DEBUG_OUT("here 4\n");
     row["column_name"] = Value("column_name");
     insert(&row);
-    DEBUG_OUT("here 5\n");
     row["column_name"] = Value("data_type");
     insert(&row);
-    DEBUG_OUT("here 6\n");
+    DEBUG_OUT("Columns::create() - end\n");
 }
 
 // Manually check that (table_name, column_name) is unique.
