@@ -52,7 +52,17 @@ Handle HeapTable::insert(const ValueDict *row) {
 
 void HeapTable::update(const Handle handle, const ValueDict *new_values) {}
 
-void HeapTable::del(const Handle handle) {}
+void HeapTable::del(const Handle handle) {
+    DEBUG_OUT("HeapTable::del() - begin\n");
+    open();
+    BlockID block_id = handle.first;
+    RecordID record_id = handle.second;
+    SlottedPage *block = this->file.get(block_id);
+    block->del(record_id);
+    this->file.put(block);
+    delete block;
+    DEBUG_OUT("HeapTable::del() - end\n");
+}
 
 // prof
 bool HeapTable::selected(Handle handle, const ValueDict *where) {

@@ -108,9 +108,11 @@ Handle Tables::insert(const ValueDict *row) {
 // Remove a row, but first remove from table cache if there
 // NOTE: once the row is deleted, any reference to the table (from get_table() below) is gone! So drop the table first.
 void Tables::del(Handle handle) {
+    DEBUG_OUT("Tables::del() - begin\n");
     // remove from cache, if there
     ValueDict *row = project(handle);
     Identifier table_name = row->at("table_name").s;
+    delete row;
     if (Tables::table_cache.find(table_name) != Tables::table_cache.end()) {
         DbRelation *table = Tables::table_cache.at(table_name);
         Tables::table_cache.erase(table_name);
@@ -118,6 +120,7 @@ void Tables::del(Handle handle) {
     }
 
     HeapTable::del(handle);
+    DEBUG_OUT("Tables::del() - end\n");
 }
 
 // Return a list of column names and column attributes for given table.
@@ -130,6 +133,7 @@ void Tables::get_columns(Identifier table_name, ColumnNames &column_names, Colum
 
     ColumnAttribute column_attribute;
     for (auto const &handle: *handles) {
+        DEBUG_OUT("Tables::get_columns() - for\n");
         ValueDict *row = Tables::columns_table->project(
                 handle);  // get the row's values: {'column_name': <name>, 'data_type': <type>}
 

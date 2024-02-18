@@ -98,10 +98,9 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
         return new QueryResult("Error: DbRelationError: " + string(e.what()));
     }
 
-
-
     // Add columns to _columns
-    DbRelation &columns_table = tables->get_table(Columns::TABLE_NAME); // "runtime polymorphism"
+    DbRelation &columns_table = tables->get_table(Columns::TABLE_NAME);
+    Handles column_handles;
     try {
         DEBUG_OUT("SQLExec::create() - try\n");
         for (auto const &column : *statement->columns) {
@@ -120,22 +119,21 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
             row["column_name"] = Value(column->name);
             row["data_type"] = Value(type);
             DEBUG_OUT("SQLExec::create() - insert\n");
-            columns_table.insert(&row);
+            Handle column_handle = columns_table.insert(&row);
+            column_handles.push_back(column_handle);
         }
     } catch (DbRelationError &e) {
         DEBUG_OUT_VAR("SQLExec::create() - catch: %s\n", e.what());
         // Something prevented adding columns to _columns,
         // must remove table, as well as columns we did add.
-        SQLExec::tables->del(table_handle);
-        Handles *handles = columns_table.select(&table_record);
-        for (auto handle : *handles) {
+        tables->del(table_handle);
+        for (auto handle : column_handles) {
             columns_table.del(handle);
         }
         DEBUG_OUT("SQLExec::create() - end catch\n");
         return new QueryResult("Error: DbRelationError: " + string(e.what()));
     }
 
-    // Create table
     DbRelation &table = tables->get_table(table_name);
     table.create();
 
@@ -203,7 +201,6 @@ QueryResult *SQLExec::show_tables() {
         rows->push_back(row);
     }
     string message = "successfully returned " + std::to_string(rows->size()) + " rows";
-    DEBUG_OUT_VAR("SQLExec::show_tables() - msg: %s\n", message.c_str());
     DEBUG_OUT_VAR("SQLExec::show_tables() - names: %ld\n", names->size());
     DEBUG_OUT_VAR("SQLExec::show_tables() - attribs: %ld\n", attribs->size());
     DEBUG_OUT_VAR("SQLExec::show_tables() - message: %s\n", message.c_str());
