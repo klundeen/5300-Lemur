@@ -4,7 +4,7 @@
  * @see "Seattle University, CPSC5300, Winter Quarter 2024"
  */
 #include "sql_exec.h"
-#define DEBUG_ENABLED
+// #define DEBUG_ENABLED
 #include "debug.h"
 
 using namespace std;
@@ -144,7 +144,7 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
     }
 
     DEBUG_OUT("SQLExec::create() - end (success)\n");
-    return new QueryResult("Created " + table_name + "\n");
+    return new QueryResult("created " + table_name);
 }
 
 // DROP ...

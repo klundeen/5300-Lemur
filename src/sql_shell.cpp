@@ -13,7 +13,7 @@
 #include <iostream>
 #include <sstream>
 #include <string>
-#define DEBUG_ENABLED
+// #define DEBUG_ENABLED
 #include "debug.h"
 
 using namespace std;
@@ -67,7 +67,7 @@ void SQLShell::run() {
 
                 // Now, execute it using SQLExec
                 QueryResult *query_result = sql_exec->execute(parser_result->getStatement(i));
-                std::cout << *query_result << std::endl;
+                std::cout << *query_result;
                 delete query_result;
             }
         } else {
