@@ -104,24 +104,29 @@ bool SlottedPage::has_room(u_int16_t size) const {
  * is a left shift (end < start).
  */
 void SlottedPage::slide(u_int16_t start, u_int16_t end) {
-    int16_t shift = end - start;
-    if (shift == 0) {
+    int shift = end - start;
+    if (shift == 0)
         return;
-    }
 
-    u_int16_t data_loc = this->end_free + 1;
-    memmove(this->address(data_loc + shift), address(data_loc), abs(shift));
-    RecordIDs *ids = this->ids();
-    for (RecordID &id : *ids) {
-        u_int16_t size, loc;
-        this->get_header(size, loc, id);
+    // slide data
+    void *to = this->address((uint16_t) (this->end_free + 1 + shift));
+    void *from = this->address((uint16_t) (this->end_free + 1));
+    int bytes = start - (this->end_free + 1U);
+    memmove(to, from, bytes);
+
+    // fix up headers to the right
+    RecordIDs *record_ids = ids();
+    for (auto const &record_id : *record_ids) {
+        uint16_t size, loc;
+        get_header(size, loc, record_id);
         if (loc <= start) {
-            this->put_header(id, size, loc + shift);
+            loc += shift;
+            put_header(record_id, size, loc);
         }
     }
-    delete ids;
+    delete record_ids;
     this->end_free += shift;
-    this->put_header();
+    put_header();
 }
 
 // Get 2-byte integer at given offset in block.

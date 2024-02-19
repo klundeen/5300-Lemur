@@ -98,14 +98,14 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
         throw e;
     }
 
-
     // Add columns to _columns
     DbRelation &columns_table = tables->get_table(Columns::TABLE_NAME);
     Handles *column_handles = new Handles();
     try {
         DEBUG_OUT("SQLExec::create() - try\n");
+        int loop_count = 0;
         for (auto const &column : *statement->columns) {
-            DEBUG_OUT("SQLExec::create() - for\n");
+            DEBUG_OUT_VAR("SQLExec::create() - for(%d)\n", loop_count++);
             string type;
             if (column->type == ColumnDefinition::DataType::INT)
                 type = "INT";
@@ -127,7 +127,11 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
         DEBUG_OUT_VAR("SQLExec::create() - catch: %s\n", e.what());
         // Something prevented adding columns to _columns,
         // must remove table, as well as columns we did add.
-        tables->del(table_handle);
+        tables->del(table_handle); // Deleting the wrong table?
+
+        // for (auto const &handle : *column_handles) {
+        //     column_table.del(handle);
+        // }
 
         DEBUG_OUT("SQLExec::create() - end catch\n");
         throw e;

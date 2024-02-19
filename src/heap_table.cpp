@@ -69,7 +69,7 @@ void HeapTable::update(const Handle handle, const ValueDict *new_values) {
 }
 
 void HeapTable::del(const Handle handle) {
-    DEBUG_OUT_VAR("HeapTable::del(block: %d, record: %d)\n", handle.first, handle.second);
+    DEBUG_OUT_VAR("HeapTable::del(block: %d, record: %d from %s)\n", handle.first, handle.second, this->file.get_dbfilename().c_str());
     open();
     BlockID block_id = handle.first;
     RecordID record_id = handle.second;

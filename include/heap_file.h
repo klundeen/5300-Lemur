@@ -55,6 +55,8 @@ public:
      */
     virtual uint32_t get_last_block_id() { return last; }
 
+    virtual std::string get_dbfilename() { return dbfilename; }
+
 protected:
     std::string dbfilename;
     uint32_t last;
