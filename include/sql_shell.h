@@ -15,7 +15,7 @@
  * @class SQLShell - Implementation of SQL Shell
  */
 class SQLShell {
-   public:
+public:
     /**
      * Initialize the database environment with the given home directory
      * @param envHome  the home directory of the database
@@ -28,24 +28,6 @@ class SQLShell {
      */
     virtual void run();
 
-    /**
-     * Echo a SQL command back to the interface
-     */
-    virtual std::string echo(const hsql::SQLStatement *stmt);
-
-    /**
-     * Run automatic test on SQL Parser
-     */
-    void testSQLParser();
-
-   private:
+private:
     static bool initialized;
-
-    void printExpression(hsql::Expr *expr, std::stringstream &ss);
-
-    void printTableRefInfo(hsql::TableRef *table, std::stringstream &ss);
-
-    std::string columnDefinitionToString(const hsql::ColumnDefinition *col);
-
-    void testParseSQLQuery(std::string query, std::string expected);
 };

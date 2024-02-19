@@ -218,7 +218,9 @@ QueryResult *SQLExec::show_tables() {
     for (Handle &handle : *handles) {
         DEBUG_OUT("SQLExec::show_tables() - for\n");
         ValueDict *row = tables->project(handle);
-        if ((*row)["table_name"].s == "_tables" || (*row)["table_name"].s == "_columns") {
+        if ((*row)["table_name"].s == "_tables"  ||
+            (*row)["table_name"].s == "_columns" ||
+            (*row)["table_name"].s == "_indices") {
             continue;
         }
         rows->push_back(row);
