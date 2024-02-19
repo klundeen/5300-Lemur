@@ -175,7 +175,15 @@ QueryResult *SQLExec::create_table(const CreateStatement *statement) {
 
 
 QueryResult *SQLExec::drop(const DropStatement *statement) {
-    DEBUG_OUT("SQLExec::drop() - begin\n");
+    switch (statement->type) {
+        case DropStatement::EntityType::kTable:    return drop_table(statement);
+        case DropStatement::EntityType::kIndex:     return drop_index(statement);
+        default:                                    return new QueryResult("Cannot drop unknown entity type!");
+    }
+}
+
+QueryResult *SQLExec::drop_table(const DropStatement *statement) {
+    DEBUG_OUT("SQLExec::drop_table() - begin\n");
     string table_name = statement->name;
     if (table_name == "_tables" || table_name == "_columns") {
         DEBUG_OUT("SQLExec::drop() - end throw\n");
@@ -209,8 +217,29 @@ QueryResult *SQLExec::drop(const DropStatement *statement) {
     DbRelation &table = tables->get_table(table_name);
     table.drop();
     string message = "dropped " + table_name;
-    DEBUG_OUT("SQLExec::drop() - end\n");
+    DEBUG_OUT("SQLExec::drop_table() - end\n");
     return new QueryResult(message);
+}
+
+QueryResult *SQLExec::drop_index(const DropStatement *statement) {
+    DEBUG_OUT("SQLExec::drop_index() - begin\n");
+    string table_name = string(statement->name);
+    string index_name = string(statement->indexName);
+
+    DEBUG_OUT("SQLExec::drop_index() - got the index\n");
+    ValueDict target;
+    target["table_name"] = table_name;
+    target["index_name"] = index_name;
+    Handles *handles = indices->select(&target);
+    DEBUG_OUT("SQLExec::drop_index() - got the handles\n");
+    for (Handle &handle : *handles) {
+        indices->del(handle);
+    }
+
+    DEBUG_OUT("SQLExec::drop_index() - deleted the handles\n");
+    // Indices::del() handles dropping the DbIndex object
+    DEBUG_OUT("SQLExec::drop_index() - end (success)\n");
+    return new QueryResult("dropped index " + index_name);
 }
 
 QueryResult *SQLExec::show(const ShowStatement *statement) {
@@ -281,6 +310,7 @@ QueryResult *SQLExec::show_columns(const ShowStatement *statement) {
     return new QueryResult(names, attribs, rows, message);
 }
 
+// FIXME: Make sure the table exists first
 QueryResult *SQLExec::create_index(const CreateStatement *statement) {
     DEBUG_OUT("SQLExec::create_index() - begin\n");
     string table_name = string(statement->tableName);
@@ -329,8 +359,4 @@ QueryResult *SQLExec::show_index(const ShowStatement *statement) {
     DEBUG_OUT("SQLExec::show_index() - end\n");
     string message = "successfully returned " + std::to_string(rows->size()) + " rows";
     return new QueryResult(names, attribs, rows, message);
-}
-
-QueryResult *SQLExec::drop_index(const DropStatement *statement) {
-    return new QueryResult("drop index not implemented");  // FIXME
 }
