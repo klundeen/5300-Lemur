@@ -173,7 +173,6 @@ QueryResult *SQLExec::create_table(const CreateStatement *statement) {
     return new QueryResult("created " + table_name);
 }
 
-
 QueryResult *SQLExec::drop(const DropStatement *statement) {
     switch (statement->type) {
         case DropStatement::EntityType::kTable:    return drop_table(statement);
@@ -310,11 +309,21 @@ QueryResult *SQLExec::show_columns(const ShowStatement *statement) {
     return new QueryResult(names, attribs, rows, message);
 }
 
-// FIXME: Make sure the table exists first
 QueryResult *SQLExec::create_index(const CreateStatement *statement) {
     DEBUG_OUT("SQLExec::create_index() - begin\n");
     string table_name = string(statement->tableName);
     string index_name = string(statement->indexName);
+    
+    ValueDict target;
+    target["table_name"] = Value(table_name);
+
+    // Make sure table exists first
+    Handles *handles = tables->select(&target);
+    if (handles->size() == 0) {
+        delete handles;
+        throw SQLExecError("table " + table_name + " does not exist!");
+    }
+    delete handles;
 
     ValueDict row;
     row["table_name"] = Value(table_name);
