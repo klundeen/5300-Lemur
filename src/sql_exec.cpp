@@ -160,7 +160,7 @@ QueryResult *SQLExec::create_table(const CreateStatement *statement) {
         for (auto const &handle : *column_handles) {
             columns_table.del(handle);
         }
-
+        delete column_handles;
         DEBUG_OUT("SQLExec::create() - end catch\n");
         throw e;
     }
@@ -234,6 +234,7 @@ QueryResult *SQLExec::drop_index(const DropStatement *statement) {
     for (Handle &handle : *handles) {
         indices->del(handle);
     }
+    delete handles;
 
     DEBUG_OUT("SQLExec::drop_index() - deleted the handles\n");
     // Indices::del() handles dropping the DbIndex object
@@ -306,6 +307,7 @@ QueryResult *SQLExec::show_columns(const ShowStatement *statement) {
     DEBUG_OUT_VAR("SQLExec::show_columns() - message: %s\n", message.c_str());
 
     DEBUG_OUT("SQLExec::show_columns() - end\n");
+    delete col_handles;
     return new QueryResult(names, attribs, rows, message);
 }
 
@@ -365,6 +367,7 @@ QueryResult *SQLExec::show_index(const ShowStatement *statement) {
         rows->push_back(row);
     }
 
+    delete handles;
     DEBUG_OUT("SQLExec::show_index() - end\n");
     string message = "successfully returned " + std::to_string(rows->size()) + " rows";
     return new QueryResult(names, attribs, rows, message);
