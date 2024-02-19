@@ -33,6 +33,14 @@ ostream &operator<<(ostream &out, const QueryResult &qres) {
                 switch (value.data_type) {
                     case ColumnAttribute::INT:  out << value.n;                 break;
                     case ColumnAttribute::TEXT: out << "\"" << value.s << "\""; break;
+                    case ColumnAttribute::BOOLEAN: {
+                        if (value.n == 1) {
+                            out << "true";
+                        } else {
+                            out << "false";
+                        }
+                        break;
+                    }
                     default:                    out << "???";
                 }
                 out << " ";
@@ -303,7 +311,24 @@ QueryResult *SQLExec::create_index(const CreateStatement *statement) {
 }
 
 QueryResult *SQLExec::show_index(const ShowStatement *statement) {
-     return new QueryResult("show index not implemented"); // FIXME
+    DEBUG_OUT("SQLExec::show_index() - begin\n");
+    string table_name = string(statement->tableName);
+    ColumnNames *names = new ColumnNames(indices->get_column_names());
+    ColumnAttributes *attribs = new ColumnAttributes();
+
+    ValueDicts *rows = new ValueDicts();
+    ValueDict target_table;
+    target_table["table_name"] = table_name;
+
+    Handles *handles = indices->select(&target_table);
+    for (Handle &handle : *handles) {
+        ValueDict *row = indices->project(handle);
+        rows->push_back(row);
+    }
+
+    DEBUG_OUT("SQLExec::show_index() - end\n");
+    string message = "successfully returned " + std::to_string(rows->size()) + " rows";
+    return new QueryResult(names, attribs, rows, message);
 }
 
 QueryResult *SQLExec::drop_index(const DropStatement *statement) {
