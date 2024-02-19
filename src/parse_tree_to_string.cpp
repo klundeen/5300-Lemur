@@ -8,6 +8,9 @@
 using namespace std;
 using namespace hsql;
 
+#define DEBUG_ENALBED
+#include "debug.h"
+
 const vector <string> parse_tree_to_string::reserved_words = {"COLUMNS", "SHOW", "TABLES", "ADD", "ALL", "ALLOCATE",
                                                            "ALTER", "AND", "ANY", "ARE", "ARRAY", "AS", "ASENSITIVE",
                                                            "ASYMMETRIC", "AT", "ATOMIC", "AUTHORIZATION", "BEGIN",
@@ -210,21 +213,39 @@ string parse_tree_to_string::insert(const InsertStatement *stmt) {
 }
 
 string parse_tree_to_string::create(const CreateStatement *stmt) {
+    DEBUG_OUT("parse_tree_to_string::create()\n");
     string ret("CREATE ");
-    if (stmt->type != CreateStatement::kTable)
+    if (CreateStatement::kTable == stmt->type) {
+        ret += "TABLE ";
+        if (stmt->ifNotExists)
+            ret += "IF NOT EXISTS ";
+        ret += string(stmt->tableName) + " (";
+        bool doComma = false;
+        for (ColumnDefinition *col : *stmt->columns) {
+            if (doComma)
+                ret += ", ";
+            ret += column_definition(col);
+            doComma = true;
+        }
+        ret += ")";
+    } else if (CreateStatement::kIndex == stmt->type) {
+        ret += "INDEX ";
+        ret += string(stmt->indexName);
+        ret += " ON ";
+        ret += string(stmt->tableName);
+        ret += "[USING ";
+        ret += string(stmt->indexType) + "(";
+        bool doComma = false;
+        for (ColumnDefinition *col : *stmt->columns) {
+            if (doComma)
+                ret += ", ";
+            ret += column_definition(col);
+            doComma = true;
+        }
+        ret += ")";
+    } else {
         return ret + "...";
-    ret += "TABLE ";
-    if (stmt->ifNotExists)
-        ret += "IF NOT EXISTS ";
-    ret += string(stmt->tableName) + " (";
-    bool doComma = false;
-    for (ColumnDefinition *col : *stmt->columns) {
-        if (doComma)
-            ret += ", ";
-        ret += column_definition(col);
-        doComma = true;
     }
-    ret += ")";
     return ret;
 }
 
