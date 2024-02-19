@@ -103,7 +103,9 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
     Handles *column_handles = new Handles();
     try {
         DEBUG_OUT("SQLExec::create() - try\n");
+#ifdef DEBUG_ENABLED
         int loop_count = 0;
+#endif
         for (auto const &column : *statement->columns) {
             DEBUG_OUT_VAR("SQLExec::create() - for(%d)\n", loop_count++);
             string type;
