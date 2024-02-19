@@ -3,6 +3,8 @@
  * @author Kevin Lundeen
  * @see "Seattle University, CPSC5300, Winter Quarter 2024"
  */
+#include <cstring>
+
 #include "sql_exec.h"
 #define DEBUG_ENABLED
 #include "debug.h"
@@ -281,7 +283,7 @@ QueryResult *SQLExec::create_index(const CreateStatement *statement) {
     row["index_name"] = Value(index_name);
     row["seq_in_index"] = Value(0);
     row["index_type"] = Value(statement->indexType);
-    row["is_unique"] = Value(true); // FIXME - what determines is_unique?
+    row["is_unique"] = Value((strcmp("BTREE", statement->indexType) == 0));
 
     DEBUG_OUT("SQLExec::create_index() - sequence in index\n");
     size_t seq_num = 1;
