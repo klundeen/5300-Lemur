@@ -85,8 +85,8 @@ SQLExec::column_definition(const ColumnDefinition *col, Identifier &column_name,
 
 QueryResult *SQLExec::create(const CreateStatement *statement) {
     switch (statement->type) {
-        case CreateStatement::EntityType::kTables:  return create_tables(statement);
-        case CreateStatement::EntityType::kIndex:   return create_index(statement);
+        case CreateStatement::CreateType::kTable:   return create_table(statement);
+        case CreateStatement::CreateType::kIndex:   return create_index(statement);
         default:                                    return new QueryResult("Cannot create unknown entity type!");
     }
 }
