@@ -5,7 +5,7 @@
  */
 #include "schema_tables.h"
 #include "parse_tree_to_string.h"
-// #define DEBUG_ENABLED
+#define DEBUG_ENABLED
 #include "debug.h"
 
 
@@ -432,11 +432,16 @@ public:
 
 // Return an index for given table_name and index_name.
 DbIndex &Indices::get_index(Identifier table_name, Identifier index_name) {
+    DEBUG_OUT("Indices::get_index() - begin\n");
     // if they are asking about an index we've once constructed, then just return that one
     std::pair<Identifier, Identifier> cache_key(table_name, index_name);
     if (Indices::index_cache.find(cache_key) != Indices::index_cache.end())
+    {
+        DEBUG_OUT("Indices::get_index() - end (did find index)\n");
         return *Indices::index_cache[cache_key];
+    }
 
+    DEBUG_OUT("Indices::get_index() - assume dummy\n");
     // otherwise assume it is a DummyIndex (for now)
     ColumnNames column_names;
     bool is_hash, is_unique;
@@ -449,6 +454,7 @@ DbIndex &Indices::get_index(Identifier table_name, Identifier index_name) {
         index = new DummyIndex(table, index_name, column_names, is_unique);  // FIXME - change to BTreeIndex
     }
     Indices::index_cache[cache_key] = index;
+    DEBUG_OUT("Indices::get_index() - end\n");
     return *index;
 }
 

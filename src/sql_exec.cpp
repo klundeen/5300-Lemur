@@ -4,7 +4,7 @@
  * @see "Seattle University, CPSC5300, Winter Quarter 2024"
  */
 #include "sql_exec.h"
-// #define DEBUG_ENABLED
+#define DEBUG_ENABLED
 #include "debug.h"
 
 using namespace std;
@@ -12,6 +12,7 @@ using namespace hsql;
 
 // define static data
 Tables *SQLExec::tables = nullptr;
+Indices *SQLExec::indices = nullptr;
 
 // make query result be printable
 ostream &operator<<(ostream &out, const QueryResult &qres) {
@@ -56,6 +57,12 @@ QueryResult *SQLExec::execute(const SQLStatement *statement) {
         tables = new Tables();
         tables->open();
     }
+
+    if (!indices) {
+        indices = new Indices();
+        indices->open();
+    }
+
     try {
         DEBUG_OUT("SQLExec::execute() - try\n");
         switch (statement->type()) {
@@ -71,8 +78,7 @@ QueryResult *SQLExec::execute(const SQLStatement *statement) {
     DEBUG_OUT("SQLExec::execute() - end\n");
 }
 
-void
-SQLExec::column_definition(const ColumnDefinition *col, Identifier &column_name, ColumnAttribute &column_attribute) {
+void SQLExec::column_definition(const ColumnDefinition *col, Identifier &column_name, ColumnAttribute &column_attribute) {
     DEBUG_OUT("SQLExec::column_definition() - begin\n");
     column_name = std::string(col->name);
     switch (col->type) {
@@ -84,11 +90,13 @@ SQLExec::column_definition(const ColumnDefinition *col, Identifier &column_name,
 }
 
 QueryResult *SQLExec::create(const CreateStatement *statement) {
+    DEBUG_OUT("SQLExec::create() - begin\n");
     switch (statement->type) {
         case CreateStatement::CreateType::kTable:   return create_table(statement);
         case CreateStatement::CreateType::kIndex:   return create_index(statement);
         default:                                    return new QueryResult("Cannot create unknown entity type!");
     }
+    DEBUG_OUT("SQLExec::create() - end\n");
 }
 
 QueryResult *SQLExec::create_table(const CreateStatement *statement) {
@@ -155,11 +163,7 @@ QueryResult *SQLExec::create_table(const CreateStatement *statement) {
     return new QueryResult("created " + table_name);
 }
 
-QueryResult *SQLExec::create_index(const CreateStatement *statement) {
-    return new QueryResult("not implemented");
-}
 
-// DROP ...
 QueryResult *SQLExec::drop(const DropStatement *statement) {
     DEBUG_OUT("SQLExec::drop() - begin\n");
     string table_name = statement->name;
@@ -203,6 +207,7 @@ QueryResult *SQLExec::show(const ShowStatement *statement) {
     switch (statement->type) {
         case ShowStatement::EntityType::kTables:    return show_tables();
         case ShowStatement::EntityType::kColumns:   return show_columns(statement);
+        case ShowStatement::EntityType::kIndex:     return show_index(statement);
         default:                                    return new QueryResult("Cannot show unknown entity type!");
     }
 }
@@ -264,6 +269,35 @@ QueryResult *SQLExec::show_columns(const ShowStatement *statement) {
 
     DEBUG_OUT("SQLExec::show_columns() - end\n");
     return new QueryResult(names, attribs, rows, message);
+}
+
+QueryResult *SQLExec::create_index(const CreateStatement *statement) {
+    DEBUG_OUT("SQLExec::create_index() - begin\n");
+    string table_name = string(statement->tableName);
+    string index_name = string(statement->indexName);
+
+    ValueDict row;
+    row["table_name"] = Value(table_name);
+    row["index_name"] = Value(index_name);
+    row["seq_in_index"] = Value(0);
+    row["index_type"] = Value(statement->indexType);
+    row["is_unique"] = Value(true); // FIXME - what determines is_unique?
+
+    DEBUG_OUT("SQLExec::create_index() - sequence in index\n");
+    size_t seq_num = 1;
+    for (auto const &column : *statement->indexColumns) {
+        DEBUG_OUT_VAR("SQLExec::create_index() - for(%ld)\n", seq_num);
+        row["seq_in_index"] = Value(seq_num++);
+        row["column_name"] = Value(column);
+        indices->insert(&row);
+    }
+
+    // Create file for index
+    DbIndex &index = indices->get_index(table_name, index_name);
+    index.create();
+
+    DEBUG_OUT("SQLExec::create_index() - end\n");
+    return new QueryResult("created index " + index_name);
 }
 
 QueryResult *SQLExec::show_index(const ShowStatement *statement) {
