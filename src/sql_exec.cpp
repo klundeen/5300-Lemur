@@ -84,6 +84,14 @@ SQLExec::column_definition(const ColumnDefinition *col, Identifier &column_name,
 }
 
 QueryResult *SQLExec::create(const CreateStatement *statement) {
+    switch (statement->type) {
+        case CreateStatement::EntityType::kTables:  return create_tables(statement);
+        case CreateStatement::EntityType::kIndex:   return create_index(statement);
+        default:                                    return new QueryResult("Cannot create unknown entity type!");
+    }
+}
+
+QueryResult *SQLExec::create_table(const CreateStatement *statement) {
     DEBUG_OUT("SQLExec::create() - begin\n");
 
     // Add table to _tables
@@ -131,9 +139,9 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
         // must remove table, as well as columns we did add.
         tables->del(table_handle); // Deleting the wrong table?
 
-        // for (auto const &handle : *column_handles) {
-        //     column_table.del(handle);
-        // }
+        for (auto const &handle : *column_handles) {
+            columns_table.del(handle);
+        }
 
         DEBUG_OUT("SQLExec::create() - end catch\n");
         throw e;
@@ -145,6 +153,10 @@ QueryResult *SQLExec::create(const CreateStatement *statement) {
 
     DEBUG_OUT("SQLExec::create() - end (success)\n");
     return new QueryResult("created " + table_name);
+}
+
+QueryResult *SQLExec::create_index(const CreateStatement *statement) {
+    return new QueryResult("not implemented");
 }
 
 // DROP ...
