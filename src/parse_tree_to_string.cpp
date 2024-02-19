@@ -230,19 +230,20 @@ string parse_tree_to_string::create(const CreateStatement *stmt) {
         ret += ")";
     } else if (CreateStatement::kIndex == stmt->type) {
         ret += "INDEX ";
-        // ret += string(stmt->indexName);
-        // ret += " ON ";
-        // ret += string(stmt->tableName);
-        // ret += "[USING ";
-        // ret += string(stmt->indexType) + "(";
-        // bool doComma = false;
-        // for (ColumnDefinition *col : *stmt->columns) {
-        //     if (doComma)
-        //         ret += ", ";
-        //     ret += column_definition(col);
-        //     doComma = true;
-        // }
-        // ret += ")";
+        ret += string(stmt->indexName);
+        ret += " ON ";
+        ret += string(stmt->tableName);
+        ret += " USING ";
+        ret += string(stmt->indexType) + " (";
+        bool doComma = false;
+        for (string idx_col : *stmt->indexColumns) {
+            if (doComma) {
+                ret += ", ";
+            }
+            ret += idx_col;
+            doComma = true;
+        }
+        ret += ")";
     } else {
         return ret + "...";
     }
