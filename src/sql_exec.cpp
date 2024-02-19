@@ -251,3 +251,11 @@ QueryResult *SQLExec::show_columns(const ShowStatement *statement) {
     DEBUG_OUT("SQLExec::show_columns() - end\n");
     return new QueryResult(names, attribs, rows, message);
 }
+
+QueryResult *SQLExec::show_index(const ShowStatement *statement) {
+     return new QueryResult("show index not implemented"); // FIXME
+}
+
+QueryResult *SQLExec::drop_index(const DropStatement *statement) {
+    return new QueryResult("drop index not implemented");  // FIXME
+}
