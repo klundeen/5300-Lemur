@@ -6,7 +6,7 @@
 #include <cstring>
 
 #include "sql_exec.h"
-#define DEBUG_ENABLED
+// #define DEBUG_ENABLED
 #include "debug.h"
 
 using namespace std;
@@ -265,9 +265,11 @@ QueryResult *SQLExec::show_tables() {
         if ((*row)["table_name"].s == "_tables"  ||
             (*row)["table_name"].s == "_columns" ||
             (*row)["table_name"].s == "_indices") {
+            delete row;
             continue;
         }
         rows->push_back(row);
+        delete row;
     }
     string message = "successfully returned " + std::to_string(rows->size()) + " rows";
     DEBUG_OUT_VAR("SQLExec::show_tables() - names: %ld\n", names->size());
@@ -297,6 +299,7 @@ QueryResult *SQLExec::show_columns(const ShowStatement *statement) {
     {
         ValueDict *row = col_table.project(handle, names);
         rows->push_back(row);
+        delete row;
     }
 
     string message = "successfully returned " + std::to_string(rows->size()) + " rows";
@@ -365,6 +368,7 @@ QueryResult *SQLExec::show_index(const ShowStatement *statement) {
     for (Handle &handle : *handles) {
         ValueDict *row = indices->project(handle);
         rows->push_back(row);
+        delete row;
     }
 
     delete handles;

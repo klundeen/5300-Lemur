@@ -79,5 +79,6 @@ void SQLShell::run() {
         }
         delete parser_result;
         delete sql_exec;
+        delete pt_to_s;
     }
 }

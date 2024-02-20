@@ -145,8 +145,9 @@ ValueDict *HeapTable::project(Handle handle, const ColumnNames *column_names) {
         return row;
     ValueDict *result = new ValueDict();
     for (auto const &column_name: *column_names) {
-        if (row->find(column_name) == row->end())
+        if (row->find(column_name) == row->end()) {
             throw DbRelationError("table does not have column named '" + column_name + "'");
+        }
         (*result)[column_name] = (*row)[column_name];
     }
     delete row;

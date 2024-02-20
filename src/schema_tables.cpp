@@ -5,7 +5,7 @@
  */
 #include "schema_tables.h"
 #include "parse_tree_to_string.h"
-#define DEBUG_ENABLED
+// #define DEBUG_ENABLED
 #include "debug.h"
 
 
@@ -378,6 +378,7 @@ void Indices::del(Handle handle) {
         Indices::index_cache.erase(cache_key);
         delete index;
     }
+    delete row;
     HeapTable::del(handle);
 }
 

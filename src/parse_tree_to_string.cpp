@@ -256,6 +256,11 @@ string parse_tree_to_string::drop(const DropStatement *stmt) {
         case DropStatement::kTable:
             ret += "TABLE ";
             break;
+        case DropStatement::kIndex:
+            ret += "INDEX ";
+            ret += stmt->indexName;
+            ret += " FROM ";
+            break;
         default:
             ret += "? ";
     }
@@ -273,7 +278,7 @@ string parse_tree_to_string::show(const ShowStatement *stmt) {
             ret += string("COLUMNS FROM ") + stmt->tableName;
             break;
         case ShowStatement::kIndex:
-            ret += "INDEX";
+            ret += string("INDEX FROM ") + stmt->tableName;
             break;
         default:
             ret += "?what?";
