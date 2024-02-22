@@ -299,7 +299,6 @@ QueryResult *SQLExec::show_columns(const ShowStatement *statement) {
     {
         ValueDict *row = col_table.project(handle, names);
         rows->push_back(row);
-        delete row;
     }
 
     string message = "successfully returned " + std::to_string(rows->size()) + " rows";
