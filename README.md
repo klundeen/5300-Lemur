@@ -19,8 +19,6 @@ make
 *Make sure you have the db enviroment directory created.   
 For example, ``~/cpsc5300/data``
 
-*.o files will be automatically removed after succesfully built the program.
-
 
 
 ## Usage
@@ -87,26 +85,10 @@ To exit the program, type `quit` and press enter.
 SQL> quit
 ```
 
+To test Milestone 3 and 4, run through the example that professor gave in the Milestone 4 assignment page. Requirements 1-4 are satisfied in this project.
+
 ## Tools
 
 <a href="https://github.com/klundeen/5300-Lemur">
 	<img src="https://skillicons.dev/icons?i=cpp,git,bash" />
 </a>
-
-## Project Structure
-    .
-    ├── include                 # header files directory
-    │   ├── heap_storage.h      # declarations SlottedPage, HeapTable, HeapFile
-    │   ├── sql_shell.h         # declarations for SQLShell
-    │   └── storage_engine.h    # declarations for DbBlock, DbFile, DbRelation
-    ├── src		                # source files directory
-    │   ├── heap_file.cpp	    # heap file implementation
-    │   ├── test_heap_storage.cpp	# test driver for heap storage
-    │   ├── heap_table.cpp	    # heap table implementation
-    │   ├── slotted_page.cpp	# slotted page implementation
-    │   ├── sql_shell.cpp	    # sql shell implementation
-    │   └── sql5300.cpp	        # main driver for SQL engine
-    ├── .gitignore              # gitignore file
-    ├── LICENSE                 # license file
-    ├── Makefile	            # makefile for building the project
-    └── README.md	            # readme file
