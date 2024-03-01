@@ -1,5 +1,5 @@
 /**
- * @file heap_table.h - Implementation of storage_engine with a heap file structure.
+ * @file HeapTable.h - Implementation of storage_engine with a heap file structure.
  * HeapTable: DbRelation
  *
  * @author Kevin Lundeen
@@ -8,8 +8,8 @@
 #pragma once
 
 #include "storage_engine.h"
-#include "slotted_page.h"
-#include "heap_file.h"
+#include "SlottedPage.h"
+#include "HeapFile.h"
 
 /**
  * @class HeapTable - Heap storage engine (implementation of DbRelation)
@@ -49,6 +49,8 @@ public:
 
     virtual Handles *select(const ValueDict *where);
 
+    virtual Handles* select(Handles *current_selection, const ValueDict* where);
+
     virtual ValueDict *project(Handle handle);
 
     virtual ValueDict *project(Handle handle, const ColumnNames *column_names);
@@ -70,4 +72,5 @@ protected:
 };
 
 bool test_heap_storage();
+
 

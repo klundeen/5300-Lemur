@@ -1,5 +1,5 @@
 /**
- * @file heap_file.h - Implementation of storage_engine with a heap file structure.
+ * @file HeapFile.h - Implementation of storage_engine with a heap file structure.
  * HeapFile: DbFile
  *
  * @author Kevin Lundeen
@@ -8,7 +8,7 @@
 #pragma once
 
 #include "db_cxx.h"
-#include "slotted_page.h"
+#include "SlottedPage.h"
 
 
 /**
@@ -55,16 +55,15 @@ public:
      */
     virtual uint32_t get_last_block_id() { return last; }
 
-    virtual std::string get_dbfilename() { return dbfilename; }
-
 protected:
     std::string dbfilename;
     uint32_t last;
     bool closed;
     Db db;
 
-    virtual uint32_t get_block_count();
     virtual void db_open(uint flags = 0);
+
+    virtual uint32_t get_block_count();
 };
 
 

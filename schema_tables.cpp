@@ -4,13 +4,11 @@
  * @see "Seattle University, CPSC5300, Winter Quarter 2024"
  */
 #include "schema_tables.h"
-#include "parse_tree_to_string.h"
-// #define DEBUG_ENABLED
-#include "debug.h"
+#include "ParseTreeToString.h"
+#include "btree.h"
 
 
 void initialize_schema_tables() {
-    DEBUG_OUT("initialize_schema_tables() - begin\n");
     Tables tables;
     tables.create_if_not_exists();
     tables.close();
@@ -20,12 +18,12 @@ void initialize_schema_tables() {
     Indices indices;
     indices.create_if_not_exists();
     indices.close();
-    DEBUG_OUT("initialize_schema_tables() - end\n");
+
 }
 
 // Not terribly useful since the parser weeds most of these out
 bool is_acceptable_identifier(Identifier identifier) {
-    if (parse_tree_to_string::is_reserved_word(identifier))
+    if (ParseTreeToString::is_reserved_word(identifier))
         return true;
     try {
         std::stoi(identifier);
@@ -81,7 +79,6 @@ Tables::Tables() : HeapTable(TABLE_NAME, COLUMN_NAMES(), COLUMN_ATTRIBUTES()) {
 
 // Create the file and also, manually add schema tables.
 void Tables::create() {
-    DEBUG_OUT("Tables::create - begin\n");
     HeapTable::create();
     ValueDict row;
     row["table_name"] = Value("_tables");
@@ -90,60 +87,37 @@ void Tables::create() {
     insert(&row);
     row["table_name"] = Value("_indices");
     insert(&row);
-    DEBUG_OUT("Tables::create - end\n");
 }
 
 // Manually check that table_name is unique.
 Handle Tables::insert(const ValueDict *row) {
-    DEBUG_OUT_VAR("Tables::insert(\"table_name\", \"%s\") - begin\n", row->at("table_name").s.c_str());
-    // Note: Try SELECT * FROM _tables WHERE table_name = row["table_name"]
-    //       It should return nothing.
-
+    // Try SELECT * FROM _tables WHERE table_name = row["table_name"] and it should return nothing
     Handles *handles = select(row);
     bool unique = handles->empty();
     delete handles;
     if (!unique)
-    {
-        DEBUG_OUT("Tables::insert() - !unique\n");
         throw DbRelationError(row->at("table_name").s + " already exists");
-    }
-    DEBUG_OUT("Tables::insert() - end\n");
     return HeapTable::insert(row);
 }
 
 // Remove a row, but first remove from table cache if there
 // NOTE: once the row is deleted, any reference to the table (from get_table() below) is gone! So drop the table first.
 void Tables::del(Handle handle) {
-    DEBUG_OUT("Tables::del() - begin\n");
     // remove from cache, if there
     ValueDict *row = project(handle);
     Identifier table_name = row->at("table_name").s;
-    DEBUG_OUT_VAR("Tables::del(%s)\n", table_name.c_str());
     delete row;
-
-#ifdef DEBUG_ENABLED
-    DEBUG_OUT("Tables::del() cache contents: ");
-    for(auto it = Tables::table_cache.cbegin(); it != Tables::table_cache.cend(); ++it)
-    {
-        std::cout << "\"" << it->first << "\" ";
-    }
-    std::cout << "\n";
-#endif
-
     if (Tables::table_cache.find(table_name) != Tables::table_cache.end()) {
-        DEBUG_OUT("Tables::del() - removing from cache\n");
         DbRelation *table = Tables::table_cache.at(table_name);
         Tables::table_cache.erase(table_name);
         delete table;
     }
 
     HeapTable::del(handle);
-    DEBUG_OUT("Tables::del() - end\n");
 }
 
 // Return a list of column names and column attributes for given table.
 void Tables::get_columns(Identifier table_name, ColumnNames &column_names, ColumnAttributes &column_attributes) {
-    DEBUG_OUT("Tables::get_columns() - begin\n");
     // SELECT * FROM _columns WHERE table_name = <table_name>
     ValueDict where;
     where["table_name"] = table_name;
@@ -151,8 +125,8 @@ void Tables::get_columns(Identifier table_name, ColumnNames &column_names, Colum
 
     ColumnAttribute column_attribute;
     for (auto const &handle: *handles) {
-        DEBUG_OUT("Tables::get_columns() - for\n");
-        ValueDict *row = Tables::columns_table->project(handle);  // get the row's values: {'column_name': <name>, 'data_type': <type>}
+        ValueDict *row = Tables::columns_table->project(
+                handle);  // get the row's values: {'column_name': <name>, 'data_type': <type>}
 
         Identifier column_name = (*row)["column_name"].s;
         column_names.push_back(column_name);
@@ -173,18 +147,13 @@ void Tables::get_columns(Identifier table_name, ColumnNames &column_names, Colum
         delete row;
     }
     delete handles;
-    DEBUG_OUT("Tables::get_columns() - end\n");
 }
 
 // Return a table for given table_name.
 DbRelation &Tables::get_table(Identifier table_name) {
-    DEBUG_OUT_VAR("Tables::get_table(%s) - begin\n", table_name.c_str());
     // if they are asking about a table we've once constructed, then just return that one
     if (Tables::table_cache.find(table_name) != Tables::table_cache.end())
-    {
-        DEBUG_OUT_VAR("Tables::get_table(%s) - specific end\n", table_name.c_str());
         return *Tables::table_cache[table_name];
-    }
 
     // otherwise assume it is a HeapTable (for now)
     ColumnNames column_names;
@@ -192,7 +161,6 @@ DbRelation &Tables::get_table(Identifier table_name) {
     get_columns(table_name, column_names, column_attributes);
     DbRelation *table = new HeapTable(table_name, column_names, column_attributes);
     Tables::table_cache[table_name] = table;
-    DEBUG_OUT_VAR("Tables::get_table(%s) - default end\n", table_name.c_str());
     return *table;
 }
 
@@ -233,8 +201,6 @@ Columns::Columns() : HeapTable(TABLE_NAME, COLUMN_NAMES(), COLUMN_ATTRIBUTES()) 
 
 // Create the file and also, manually add schema columns.
 void Columns::create() {
-    DEBUG_OUT("Columns::create() - begin\n");
-
     HeapTable::create();
     ValueDict row;
     row["data_type"] = Value("TEXT");  // all these are TEXT fields
@@ -264,24 +230,20 @@ void Columns::create() {
     row["column_name"] = Value("is_unique");
     row["data_type"] = Value("BOOLEAN");
     insert(&row);
-
-    DEBUG_OUT("Columns::create() - end\n");
 }
 
 // Manually check that (table_name, column_name) is unique.
 Handle Columns::insert(const ValueDict *row) {
-    DEBUG_OUT("Columns::insert() - begin\n");
     // Check that datatype is acceptable
-    if (!is_acceptable_identifier(row->at("table_name").s)) {
+    if (!is_acceptable_identifier(row->at("table_name").s))
         throw DbRelationError("unacceptable table name '" + row->at("table_name").s + "'");
-    }
-    if (!is_acceptable_identifier(row->at("column_name").s)) {
+    if (!is_acceptable_identifier(row->at("column_name").s))
         throw DbRelationError("unacceptable column name '" + row->at("column_name").s + "'");
-    }
-    if (!is_acceptable_data_type(row->at("data_type").s)) {
+    if (!is_acceptable_data_type(row->at("data_type").s))
         throw DbRelationError("unacceptable data type '" + row->at("data_type").s + "'");
-    }
 
+    // Try SELECT * FROM _columns WHERE table_name = row["table_name"] AND column_name = column_name["column_name"]
+    // and it should return nothing
     ValueDict where;
     where["table_name"] = row->at("table_name");
     where["column_name"] = row->at("column_name");
@@ -289,12 +251,8 @@ Handle Columns::insert(const ValueDict *row) {
     bool unique = handles->empty();
     delete handles;
     if (!unique)
-    {
-        DEBUG_OUT("Columns::insert() - !unique\n");
         throw DbRelationError("duplicate column " + row->at("table_name").s + "." + row->at("column_name").s);
-    }
 
-    DEBUG_OUT("Columns::insert() - end\n");
     return HeapTable::insert(row);
 }
 
@@ -372,13 +330,13 @@ void Indices::del(Handle handle) {
     ValueDict *row = project(handle);
     Identifier table_name = row->at("table_name").s;
     Identifier index_name = row->at("index_name").s;
+	delete row;
     std::pair<Identifier, Identifier> cache_key(table_name, index_name);
     if (Indices::index_cache.find(cache_key) != Indices::index_cache.end()) {
         DbIndex *index = Indices::index_cache.at(cache_key);
         Indices::index_cache.erase(cache_key);
         delete index;
     }
-    delete row;
     HeapTable::del(handle);
 }
 
@@ -431,18 +389,13 @@ public:
 };
 
 
-// Return an index for given table_name and index_name.
+// Return a table for given table_name.
 DbIndex &Indices::get_index(Identifier table_name, Identifier index_name) {
-    DEBUG_OUT("Indices::get_index() - begin\n");
     // if they are asking about an index we've once constructed, then just return that one
     std::pair<Identifier, Identifier> cache_key(table_name, index_name);
     if (Indices::index_cache.find(cache_key) != Indices::index_cache.end())
-    {
-        DEBUG_OUT("Indices::get_index() - end (did find index)\n");
         return *Indices::index_cache[cache_key];
-    }
 
-    DEBUG_OUT("Indices::get_index() - assume dummy\n");
     // otherwise assume it is a DummyIndex (for now)
     ColumnNames column_names;
     bool is_hash, is_unique;
@@ -452,10 +405,9 @@ DbIndex &Indices::get_index(Identifier table_name, Identifier index_name) {
     if (is_hash) {
         index = new DummyIndex(table, index_name, column_names, is_unique);  // FIXME - change to HashIndex
     } else {
-        index = new DummyIndex(table, index_name, column_names, is_unique);  // FIXME - change to BTreeIndex
+        index = new BTreeIndex(table, index_name, column_names, is_unique);
     }
     Indices::index_cache[cache_key] = index;
-    DEBUG_OUT("Indices::get_index() - end\n");
     return *index;
 }
 
@@ -473,3 +425,5 @@ IndexNames Indices::get_index_names(Identifier table_name) {
     delete handles;
     return ret;
 }
+
+

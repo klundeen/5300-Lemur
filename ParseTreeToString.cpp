@@ -1,17 +1,14 @@
 /**
- * @file parse_tree_to_string.cpp - SQL unparsing class implementation
+ * @file ParseTreeToString.cpp - SQL unparsing class implementation
  * @author Kevin Lundeen
  * @see "Seattle University, CPSC5300, Winter Quarter 2024"
  */
-#include "parse_tree_to_string.h"
+#include "ParseTreeToString.h"
 
 using namespace std;
 using namespace hsql;
 
-#define DEBUG_ENALBED
-#include "debug.h"
-
-const vector <string> parse_tree_to_string::reserved_words = {"COLUMNS", "SHOW", "TABLES", "ADD", "ALL", "ALLOCATE",
+const vector <string> ParseTreeToString::reserved_words = {"COLUMNS", "SHOW", "TABLES", "ADD", "ALL", "ALLOCATE",
                                                            "ALTER", "AND", "ANY", "ARE", "ARRAY", "AS", "ASENSITIVE",
                                                            "ASYMMETRIC", "AT", "ATOMIC", "AUTHORIZATION", "BEGIN",
                                                            "BETWEEN", "BIGINT", "BINARY", "BLOB", "BOOLEAN", "BOTH",
@@ -59,14 +56,14 @@ const vector <string> parse_tree_to_string::reserved_words = {"COLUMNS", "SHOW",
                                                            "WHEN", "WHENEVER", "WHERE", "WIDTH_BUCKET", "WINDOW",
                                                            "WITH", "WITHIN", "WITHOUT", "YEAR"};
 
-bool parse_tree_to_string::is_reserved_word(string candidate) {
+bool ParseTreeToString::is_reserved_word(string candidate) {
     for (auto const &word: reserved_words)
         if (candidate == word)
             return true;
     return false;
 }
 
-string parse_tree_to_string::operator_expression(const Expr *expr) {
+string ParseTreeToString::operator_expression(const Expr *expr) {
     if (expr == NULL)
         return "null";
 
@@ -84,6 +81,32 @@ string parse_tree_to_string::operator_expression(const Expr *expr) {
         case Expr::OR:
             ret += "OR";
             break;
+        case Expr::NONE:
+            break;
+        case Expr::BETWEEN:
+            break;
+        case Expr::CASE:
+            break;
+        case Expr::NOT_EQUALS:
+            break;
+        case Expr::LESS_EQ:
+            break;
+        case Expr::GREATER_EQ:
+            break;
+        case Expr::LIKE:
+            break;
+        case Expr::NOT_LIKE:
+            break;
+        case Expr::IN:
+            break;
+        case Expr::NOT:
+            break;
+        case Expr::UMINUS:
+            break;
+        case Expr::ISNULL:
+            break;
+        case Expr::EXISTS:
+            break;
         default:
             ret += "???";
             break;
@@ -93,7 +116,7 @@ string parse_tree_to_string::operator_expression(const Expr *expr) {
     return ret;
 }
 
-string parse_tree_to_string::expression(const Expr *expr) {
+string ParseTreeToString::expression(const Expr *expr) {
     string ret;
     switch (expr->type) {
         case kExprStar:
@@ -102,9 +125,11 @@ string parse_tree_to_string::expression(const Expr *expr) {
         case kExprColumnRef:
             if (expr->table != NULL)
                 ret += string(expr->table) + ".";
-        case kExprLiteralString:
             ret += expr->name;
             break;
+        case kExprLiteralString:
+            ret += string("\"") + expr->name + "\"";
+			break;
         case kExprLiteralFloat:
             ret += to_string(expr->fval);
             break;
@@ -126,7 +151,7 @@ string parse_tree_to_string::expression(const Expr *expr) {
     return ret;
 }
 
-string parse_tree_to_string::table_ref(const TableRef *table) {
+string ParseTreeToString::table_ref(const TableRef *table) {
     string ret;
     switch (table->type) {
         case kTableSelect:
@@ -174,7 +199,7 @@ string parse_tree_to_string::table_ref(const TableRef *table) {
     return ret;
 }
 
-string parse_tree_to_string::column_definition(const ColumnDefinition *col) {
+string ParseTreeToString::column_definition(const ColumnDefinition *col) {
     string ret(col->name);
     switch (col->type) {
         case ColumnDefinition::DOUBLE:
@@ -193,7 +218,7 @@ string parse_tree_to_string::column_definition(const ColumnDefinition *col) {
     return ret;
 }
 
-string parse_tree_to_string::select(const SelectStatement *stmt) {
+string ParseTreeToString::select(const SelectStatement *stmt) {
     string ret("SELECT ");
     bool doComma = false;
     for (Expr *expr : *stmt->selectList) {
@@ -208,14 +233,38 @@ string parse_tree_to_string::select(const SelectStatement *stmt) {
     return ret;
 }
 
-string parse_tree_to_string::insert(const InsertStatement *stmt) {
-    return "INSERT ...";
+string ParseTreeToString::insert(const InsertStatement *stmt) {
+    string ret("INSERT INTO ");
+    ret += stmt->tableName;
+    if (stmt->type == InsertStatement::kInsertSelect)
+        return ret + "SELECT ...";
+
+    bool doComma = false;
+    if (stmt->columns != NULL) {
+        ret += " (";
+        for (auto const &column: *stmt->columns) {
+            if (doComma)
+                ret += ", ";
+            ret += column;
+            doComma = true;
+        }
+        ret += ")";
+    }
+    ret += " VALUES (";
+    doComma = false;
+    for (Expr *expr : *stmt->values) {
+        if (doComma)
+            ret += ", ";
+        ret += expression(expr);
+        doComma = true;
+    }
+    ret += ")";
+    return ret;
 }
 
-string parse_tree_to_string::create(const CreateStatement *stmt) {
-    DEBUG_OUT("parse_tree_to_string::create()\n");
+string ParseTreeToString::create(const CreateStatement *stmt) {
     string ret("CREATE ");
-    if (CreateStatement::kTable == stmt->type) {
+    if (stmt->type == CreateStatement::kTable) {
         ret += "TABLE ";
         if (stmt->ifNotExists)
             ret += "IF NOT EXISTS ";
@@ -228,47 +277,41 @@ string parse_tree_to_string::create(const CreateStatement *stmt) {
             doComma = true;
         }
         ret += ")";
-    } else if (CreateStatement::kIndex == stmt->type) {
+    } else if (stmt->type == CreateStatement::kIndex) {
         ret += "INDEX ";
-        ret += string(stmt->indexName);
-        ret += " ON ";
-        ret += string(stmt->tableName);
-        ret += " USING ";
-        ret += string(stmt->indexType) + " (";
+        ret += string(stmt->indexName) + " ON ";
+        ret += string(stmt->tableName) + " USING " + stmt->indexType + " (";
         bool doComma = false;
-        for (string idx_col : *stmt->indexColumns) {
-            if (doComma) {
+        for (auto const &col : *stmt->indexColumns) {
+            if (doComma)
                 ret += ", ";
-            }
-            ret += idx_col;
+            ret += string(col);
             doComma = true;
         }
         ret += ")";
     } else {
-        return ret + "...";
+        ret += "...";
     }
     return ret;
 }
 
-string parse_tree_to_string::drop(const DropStatement *stmt) {
+string ParseTreeToString::drop(const DropStatement *stmt) {
     string ret("DROP ");
     switch (stmt->type) {
         case DropStatement::kTable:
             ret += "TABLE ";
             break;
-        case DropStatement::kIndex:
-            ret += "INDEX ";
-            ret += stmt->indexName;
-            ret += " FROM ";
-            break;
-        default:
+	case DropStatement::kIndex:
+	    ret += string("INDEX ") + stmt->indexName + " FROM ";
+	    break;
+    default:
             ret += "? ";
     }
     ret += stmt->name;
     return ret;
 }
 
-string parse_tree_to_string::show(const ShowStatement *stmt) {
+string ParseTreeToString::show(const ShowStatement *stmt) {
     string ret("SHOW ");
     switch (stmt->type) {
         case ShowStatement::kTables:
@@ -278,7 +321,7 @@ string parse_tree_to_string::show(const ShowStatement *stmt) {
             ret += string("COLUMNS FROM ") + stmt->tableName;
             break;
         case ShowStatement::kIndex:
-            ret += string("INDEX FROM ") + stmt->tableName;
+            ret += "INDEX";
             break;
         default:
             ret += "?what?";
@@ -287,12 +330,24 @@ string parse_tree_to_string::show(const ShowStatement *stmt) {
     return ret;
 }
 
-string parse_tree_to_string::statement(const SQLStatement *stmt) {
+string ParseTreeToString::del(const DeleteStatement *stmt) {
+    string ret("DELETE FROM ");
+    ret += stmt->tableName;
+    if (stmt->expr != NULL) {
+        ret += " WHERE ";
+        ret += expression(stmt->expr);
+    }
+    return ret;
+}
+
+string ParseTreeToString::statement(const SQLStatement *stmt) {
     switch (stmt->type()) {
         case kStmtSelect:
             return select((const SelectStatement *) stmt);
         case kStmtInsert:
             return insert((const InsertStatement *) stmt);
+        case kStmtDelete:
+            return del((const DeleteStatement *) stmt);
         case kStmtCreate:
             return create((const CreateStatement *) stmt);
         case kStmtDrop:
@@ -303,7 +358,6 @@ string parse_tree_to_string::statement(const SQLStatement *stmt) {
         case kStmtError:
         case kStmtImport:
         case kStmtUpdate:
-        case kStmtDelete:
         case kStmtPrepare:
         case kStmtExecute:
         case kStmtExport:

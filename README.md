@@ -1,94 +1,37 @@
-# 5300-Lemur
-Student DB Relation Manager project for CPSC5300 at Seattle U, Winter 2024
+# 5300-Instructor
+Instructor's DB Relation Manager project for CPSC5300 at Seattle U, Winter Quarter 2024
 
-## Installation
-**Requirements:** [Berkeley DB](https://docs.oracle.com/cd/E17076_05/html/api_reference/CXX/frame_main.html), [SQLParser](https://github.com/klundeen/sql-parser)   
-*You will need to build these requirements on your local machine or use existing one running on Seattle Univeristy CS1 server*
+Usage (argument is database directory):
+<pre>
+$ ./sql5300 ~/cpsc5300/data
+</pre>
 
-**Clone 5300-Lemur DB Relation Manager Project**
-```bash
-git clone https://github.com/klundeen/5300-Lemur.git
-```
+The database directory must exist, but needn't have any contents. Running sql5300 the first time will initialize it.
 
-Build and run the program using makefile
-
-```bash
-make
-./sql5300 <dbenv-dir-path>
-```
-*Make sure you have the db enviroment directory created.   
-For example, ``~/cpsc5300/data``
-
-
-
-## Usage
-The program will start a SQL shell where you can run SQL commands to create, select records.
-At this point, the program will parsed the input SQL commands using SQLParser 
-and return the valid parsed SQL statsment.
-
+## Tags
+- <code>Milestone1_prep</code> is just some bare bones stuff to get students started on Milestone 1.
+- <code>Milestone1</code> is playing around with the AST returned by the HyLine parser and general setup of the command loop.
+- <code>Milestone2h</code> has the intructor-provided files for Milestone2. (Note that heap_storage.cpp is just a stub.)
+- <code>Milestone2</code> is the instructor's attempt to complete the Milestone 2 assignment.
+- <code>Milestone3_prep</code> has the instructor-provided files for Milestone 3. The students' work is in <code>SQLExec.cpp</code> labeled with <code>FIXME</code>.
+- <code>Milestone4_prep</code> has the instructor-provided files for Milestone 4. The students' work is in <code>SQLExec.cpp</code> labeled with <code>FIXME</code>.
+- <code>Milestone4</code> has the instructor's attempt to complete both the Milestone 3 and Milestone 4 assignments.
+- <code>Milestone5_prep</code> has the instructor-provided files for Milestone5.
+- <code>Milestone6_prep</code> has the instructor-provided files for Milestone6.
+## Unit Tests
+There are some tests for SlottedPage and HeapTable. They can be invoked from the <code>SQL</code> prompt:
 ```sql
-SQL> create table foo (a text, b integer, c double)
->>>> CREATE TABLE foo (a TEXT, b INT, c DOUBLE)
-
-SQL> select a,b,g.c from foo as f, goo as g
->>>> SELECT a, b, g.c FROM goo AS g, foo AS f
-```
-
-To run automated test cases, use the following command. Both heap storage class 
-and shell sql parser will be tested.
-
-```bash
 SQL> test
-
-TESTING SQL PARSER...
-SQL> select * from foo left join goober on foo.x=goober.x
->>>> SELECT * FROM foo LEFT JOIN goober ON foo.x = goober.x
-...
-
-TESTING SLOTTED PAGE...
-Insert record #1 of size 42
-Insert record #2 of size 100
-Insert record #3 of size 59
-Delete record #2
-Insert record #4 of size 14
-Insert record #5 of size 77
-Update record #3 changing size to 50
-Update record #4 changing size to 18
-Records: [1:42][3:50][4:18][5:77]
-PASSED!
-==============================
-TESTING HEAP FILE...
-File Creation OK
-File Open OK
-File Get New Block OK
-File Get Existing Block OK
-File Put Block OK
-File Block IDs OK
-File Close OK
-File Drop OK
-PASSED!
-==============================
-TESTING HEAP TABLE...
-Table Creation OK
-Table Drop OK
-Table Create If Not Exist OK
-Table Insertion OK
-Table Selection OK9
-Table Projection OK
-PASSED!
-test_heap_storage: OK
+```
+Be aware that failed tests may leave garbage Berkeley DB files lingering in your data directory. If you don't care about any data in there, you are advised to just delete them all after a failed test.
+```sh
+$ rm -f data/*
 ```
 
-To exit the program, type `quit` and press enter.
-
-```sql
-SQL> quit
+## Valgrind (Linux)
+To run valgrind (files must be compiled with <code>-ggdb</code>):
+```sh
+$ valgrind --leak-check=full --suppressions=valgrind.supp ./sql5300 data
 ```
+Note that we've added suppression for the known issues with the Berkeley DB library <em>vis-à-vis</em> valgrind.
 
-To test Milestone 3 and 4, run through the example that professor gave in the Milestone 4 assignment page. Requirements 1-4 are satisfied in this project.
-
-## Tools
-
-<a href="https://github.com/klundeen/5300-Lemur">
-	<img src="https://skillicons.dev/icons?i=cpp,git,bash" />
-</a>

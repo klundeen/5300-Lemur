@@ -8,6 +8,6 @@
  * @see "Seattle University, CPSC5300, Winter Quarter 2024"
  */
 #pragma once
-#include "slotted_page.h"
-#include "heap_file.h"
-#include "heap_table.h"
+#include "SlottedPage.h"
+#include "HeapFile.h"
+#include "HeapTable.h"

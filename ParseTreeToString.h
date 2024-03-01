@@ -1,5 +1,5 @@
 /**
- * @file parse_tree_to_string.h - SQL unparsing class
+ * @file ParseTreeToString.h - SQL unparsing class
  * @author Kevin Lundeen
  * @see "Seattle University, CPSC5300, Winter Quarter 2024"
  */
@@ -10,9 +10,9 @@
 #include "SQLParser.h"
 
 /**
- * @class parse_tree_to_string - class for unparsing a Hyrise Abstract Syntax Tree
+ * @class ParseTreeToString - class for unparsing a Hyrise Abstract Syntax Tree
  */
-class parse_tree_to_string {
+class ParseTreeToString {
 public:
     /**
      * Unparse a Hyrise AST into an SQL statement.
@@ -42,6 +42,8 @@ private:
     static std::string select(const hsql::SelectStatement *stmt);
 
     static std::string insert(const hsql::InsertStatement *stmt);
+
+    static std::string del(const hsql::DeleteStatement *stmt);
 
     static std::string create(const hsql::CreateStatement *stmt);
 

@@ -94,6 +94,23 @@ public:
     virtual RecordIDs *ids() const = 0;
 
     /**
+     * Delete all the records from this block.
+     */
+    virtual void clear() = 0;
+
+    /**
+     * Get number of active (undeleted) records in this block.
+     * @returns  number of active records
+     */
+    virtual u_int16_t size() const = 0;
+
+    /**
+     * Get the number of bytes not currently used to store data or for overhead.
+     * @returns  number of unused bytes
+     */
+    virtual u_int16_t unused_bytes() const = 0;
+
+    /**
      * Access the whole block's memory as a BerkeleyDB Dbt pointer.
      * @returns  Dbt used by this block
      */
@@ -225,11 +242,15 @@ public:
 
     Value(int32_t n) : n(n) { data_type = ColumnAttribute::INT; }
 
-    Value(std::string s) : n(0), s(s) { data_type = ColumnAttribute::TEXT; }
+    Value(std::string s) : s(s) { data_type = ColumnAttribute::TEXT; }
 
     bool operator==(const Value &other) const;
 
     bool operator!=(const Value &other) const;
+
+    bool operator<(const Value &other) const;
+
+    friend std::ostream &operator<<(std::ostream &out, const Value &value);
 };
 
 // More type aliases
@@ -345,12 +366,21 @@ public:
     virtual Handles *select(const ValueDict *where) = 0;
 
     /**
+     * Conceptually, execute: SELECT <handle> FROM <table_name> WHERE <where>
+     * This version does a restricted selection based on current_selection.
+     * @param current_selection  restrict selection to be from these rows
+     * @param where              where-clause predicates
+     * @returns                  a pointer to a list of handles for qualifying rows (freed by caller)
+     */
+    virtual Handles *select(Handles *current_selection, const ValueDict *where) = 0;
+
+    /**
      * Return a sequence of all values for handle (SELECT *).
      * @param handle  row to get values from
      * @returns       dictionary of values from row (keyed by all column names)
      */
     virtual ValueDict *project(Handle handle) = 0;
- 
+
     /**
      * Return a sequence of values for handle given by column_names
      * (SELECT <column_names>).
@@ -359,7 +389,7 @@ public:
      * @returns             dictionary of values from row (keyed by column_names)
      */
     virtual ValueDict *project(Handle handle, const ColumnNames *column_names) = 0;
- 
+
     /**
      * Return a sequence of values for handle given by column_names (from dictionary)
      * (SELECT <column_names>).
@@ -368,6 +398,13 @@ public:
      * @return              dictionary of values from row (keyed by column_names)
      */
     virtual ValueDict *project(Handle handle, const ValueDict *column_names);
+
+    // additional versions of project for multiple rows
+    virtual ValueDicts *project(Handles *handles);
+
+    virtual ValueDicts *project(Handles *handles, const ColumnNames *column_names);
+
+    virtual ValueDicts *project(Handles *handles, const ValueDict *column_names);
 
     /**
      * Accessor for column_names.
@@ -385,11 +422,29 @@ public:
         return column_attributes;
     }
 
-    protected:
+    /**
+     * A version of accessor for column_attributes that further
+     * restricts returned attributes to a subset of columns.
+     * @param select_column_names  list of column names to get attributes for
+     * @returns                    column_attributes dictionary of column attributes keyed
+     *                             by column names
+     */
+    virtual ColumnAttributes *get_column_attributes(const ColumnNames &select_column_names) const;
+
+    /**
+     * Accessor method for table_name
+     * @returns  table_name
+     */
+    virtual Identifier get_table_name() const {
+        return table_name;
+    }
+
+protected:
     Identifier table_name;
     ColumnNames column_names;
     ColumnAttributes column_attributes;
 };
+
 
 class DbIndex {
 public:
@@ -463,3 +518,6 @@ protected:
     ColumnNames key_columns;
     bool unique;
 };
+
+
+
