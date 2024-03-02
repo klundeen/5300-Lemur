@@ -88,17 +88,115 @@ QueryResult *SQLExec::execute(const SQLStatement *statement) {
     }
 }
 
+Value value_from_expr(const Expr *expr, const DbRelation &table) {
+    Value value;
+    if (!expr) {
+        throw SQLExecError("Null expression");
+    }
+    switch (expr->type) {
+        case kExprLiteralInt:
+            value.data_type = ColumnAttribute::INT;
+            value.n = expr->ival;
+            break;
+        case kExprLiteralString:
+            value.data_type = ColumnAttribute::TEXT;
+            value.s = expr->name;
+            break;
+        default:
+            throw SQLExecError("Unsupported data type in expression");
+    }
+    return value;
+}
+
+ValueDict where_clause_from_expr(const Expr *expr, const DbRelation &table) {
+    ValueDict where_clause;
+    if (!expr) {
+        throw SQLExecError("Null WHERE expression");
+    }
+    // Simple equality check implementation. 
+    if (expr->type == kExprOperator && expr->opType == Expr::SIMPLE_OP && expr->opChar == '=') {
+        if (expr->expr && expr->expr->type == kExprColumnRef && expr->expr2) {
+            string column_name = expr->expr->name;
+            Value value = value_from_expr(expr->expr2, table);
+            where_clause[column_name] = value;
+        } else {
+            throw SQLExecError("Unsupported WHERE expression structure");
+        }
+    } else {
+        throw SQLExecError("Unsupported WHERE expression type");
+    }
+    return where_clause;
+}
+
 QueryResult *SQLExec::insert(const InsertStatement *statement) {
-    return new QueryResult("INSERT statement not yet implemented");  // FIXME
+    try {
+        Identifier table_name = statement->tableName;
+        DbRelation &table = SQLExec::tables->get_table(table_name);
+
+        ValueDict row;
+        // Assuming columns are specified in the statement
+        for (unsigned int i = 0; i < statement->columns->size(); ++i) {
+            string column_name = (*statement->columns)[i];
+            Expr *value_expr = (*statement->values)[i];
+            Value value;
+            value = value_from_expr(value_expr, table); 
+            row[column_name] = value;
+        }
+        
+        Handle handle = table.insert(&row);
+
+        // Update indices if any
+        auto index_names = SQLExec::indices->get_index_names(table_name);
+        for (const auto &index_name : index_names) {
+            DbIndex &index = SQLExec::indices->get_index(table_name, index_name);
+            index.insert(handle);
+        }
+        
+        return new QueryResult("successfully inserted 1 row into " + table_name);
+    } catch (const exception &e) {
+        throw SQLExecError(string("Insert failed: ") + e.what());
+    }
 }
 
 QueryResult *SQLExec::del(const DeleteStatement *statement) {
-    return new QueryResult("DELETE statement not yet implemented");  // FIXME
+    try {
+        Identifier table_name = statement->tableName;
+        DbRelation &table = SQLExec::tables->get_table(table_name);
+        EvalPlan *plan = new EvalPlan(table);
+
+        if (statement->expr != nullptr) {
+            ValueDict where_clause = where_clause_from_expr(statement->expr, table);
+            plan = new EvalPlan(&where_clause, plan);
+        }
+
+        EvalPlan *optimized = plan->optimize();
+
+        EvalPipeline pipeline = optimized->pipeline();
+
+        auto index_names = SQLExec::indices->get_index_names(table_name);
+        for (auto const &index_name : index_names) {
+            DbIndex &index = SQLExec::indices->get_index(table_name, index_name);
+            for (auto const &handle : *pipeline.second) {
+                // uncomment this once we have btree implemented
+                // index.del(handle);
+            }
+        }
+
+        for (auto const &handle : *pipeline.second) {
+            table.del(handle);
+        }
+
+        return new QueryResult("Deleted " + to_string(pipeline.second->size()) + " rows from " + table_name);
+    } catch (const exception &e) {
+        throw SQLExecError(string("DELETE failed: ") + e.what());
+    }
 }
+
 
 QueryResult *SQLExec::select(const SelectStatement *statement) {
     return new QueryResult("SELECT statement not yet implemented");  // FIXME
 }
+
 
 void
 SQLExec::column_definition(const ColumnDefinition *col, Identifier &column_name, ColumnAttribute &column_attribute) {
