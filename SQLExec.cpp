@@ -132,15 +132,28 @@ QueryResult *SQLExec::insert(const InsertStatement *statement) {
     try {
         Identifier table_name = statement->tableName;
         DbRelation &table = SQLExec::tables->get_table(table_name);
-
         ValueDict row;
-        // Assuming columns are specified in the statement
-        for (unsigned int i = 0; i < statement->columns->size(); ++i) {
-            string column_name = (*statement->columns)[i];
-            Expr *value_expr = (*statement->values)[i];
-            Value value;
-            value = value_from_expr(value_expr, table); 
-            row[column_name] = value;
+        ColumnNames column_names;
+
+        // If columns are specified in the statement
+        if (statement->columns != nullptr) {
+            for (unsigned int i = 0; i < statement->columns->size(); ++i) {
+                string column_name = (*statement->columns)[i];
+                Expr *value_expr = (*statement->values)[i];
+                Value value = value_from_expr(value_expr, table); 
+                row[column_name] = value;
+            }
+        } else {
+            // If columns are not specified, assume values for all columns
+            column_names = table.get_column_names(); // You need to implement this method if it doesn't exist
+            if (column_names.size() != statement->values->size()) {
+                throw SQLExecError("Values provided do not match number of columns in table");
+            }
+            for (unsigned int i = 0; i < column_names.size(); ++i) {
+                Expr *value_expr = (*statement->values)[i];
+                Value value = value_from_expr(value_expr, table);
+                row[column_names[i]] = value;
+            }
         }
         
         Handle handle = table.insert(&row);
