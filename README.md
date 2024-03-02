@@ -82,7 +82,7 @@ test_heap_storage: OK
 To exit the program, type `quit` and press enter.
 
 ```sql
-SQL> quit
+SQL> quit 
 ```
 
 To test Milestone 3 and 4, run through the example that professor gave in the Milestone 4 assignment page. Requirements 1-4 are satisfied in this project.
