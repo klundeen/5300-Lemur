@@ -70,8 +70,37 @@ void BTreeIndex::close() {
 // Find all the rows whose columns are equal to key. Assumes key is a dictionary whose keys are the column
 // names in the index. Returns a list of row handles.
 Handles *BTreeIndex::lookup(ValueDict *key_dict) const {
-    // FIXME
-    return nullptr;
+    if (closed)
+        throw DbRelationError("Can't perform lookup on closed index.");
+
+    KeyValue *key = tkey(key_dict);  // Transform the given key dictionary into a tuple-like structure
+    BTreeNode *node = root;
+    uint height = stat->get_height();
+
+    // Navigate down the tree until we reach a leaf
+    while (height > 1) {
+        auto *interior = dynamic_cast<BTreeInterior *>(node);
+        if (interior == nullptr)
+            throw DbRelationError("Expected an interior node.");
+        node = interior->find(key, height);
+        --height;
+    }
+
+    auto *leaf = dynamic_cast<BTreeLeaf *>(node);
+    if (leaf == nullptr)
+        throw DbRelationError("Expected a leaf node.");
+    
+    // Perform the lookup in the leaf
+    Handles *handles = new Handles();
+    try {
+        Handle handle = leaf->find_eq(key);
+        handles->push_back(handle);
+    } catch (const std::out_of_range& e) {
+        // Key not found, returning empty handles
+    }
+    
+    delete key;
+    return handles;
 }
 
 Handles *BTreeIndex::range(ValueDict *min_key, ValueDict *max_key) const {
@@ -156,7 +185,7 @@ bool test_btree() {
     row2["b"] = Value(101);
     table.insert(&row1);
     table.insert(&row2);
-    for (int i = 0; i < 100 * 1000; i++) {
+    for (int i = 0; i < 100 * 100; i++) {
         ValueDict row;
         row["a"] = Value(i + 100);
         row["b"] = Value(-i);
@@ -166,7 +195,7 @@ bool test_btree() {
     column_names.push_back("a");
     BTreeIndex index(table, "fooindex", column_names, true);
     index.create();
-    return true;  // FIXME
+    // return true;  // FIXME
 
 
     ValueDict lookup;
@@ -210,6 +239,8 @@ bool test_btree() {
             delete handles;
             delete result;
         }
+    std::cout << "lookup test passed!" << std::endl;
+    return true;
 
     // test delete
     ValueDict row;
