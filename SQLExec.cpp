@@ -113,20 +113,50 @@ ValueDict where_clause_from_expr(const Expr *expr, const DbRelation &table) {
     if (!expr) {
         throw SQLExecError("Null WHERE expression");
     }
-    // Simple equality check implementation. 
-    if (expr->type == kExprOperator && expr->opType == Expr::SIMPLE_OP && expr->opChar == '=') {
-        if (expr->expr && expr->expr->type == kExprColumnRef && expr->expr2) {
-            string column_name = expr->expr->name;
-            Value value = value_from_expr(expr->expr2, table);
-            where_clause[column_name] = value;
+    if (expr->type == kExprOperator) {
+
+        // Simple equality check implementation. 
+        if (expr->opType == Expr::SIMPLE_OP && expr->opChar == '=') {
+            if (expr->expr && expr->expr->type == kExprColumnRef && expr->expr2) {
+                string column_name = expr->expr->name;
+                Value value = value_from_expr(expr->expr2, table);
+                where_clause[column_name] = value;
+            } else {
+                throw SQLExecError("Unsupported WHERE expression structure");
+            }
+        } 
+        // AND expression check implementation
+        else if (expr->opType == Expr::OperatorType::AND) {
+            if (expr->expr && expr->expr2) {
+                ValueDict left_clause = where_clause_from_expr(expr->expr, table);
+                ValueDict right_clause = where_clause_from_expr(expr->expr2, table);
+                // Merge the two ValueDict instances using logical AND
+                for (const auto& pair : left_clause) {
+                    const string& column_name = pair.first;
+                    const Value& value = pair.second;
+                    if (right_clause.find(column_name) != right_clause.end() && right_clause[column_name] == value) {
+                        where_clause[column_name] = value;
+                    }
+                }
+                for (const auto& pair : right_clause) {
+                    const string& column_name = pair.first;
+                    const Value& value = pair.second;
+                    if (right_clause.find(column_name) != right_clause.end() && right_clause[column_name] == value) {
+                        where_clause[column_name] = value;
+                    }
+                }
+            } else {
+                throw SQLExecError("Invalid AND expression");
+            }
         } else {
-            throw SQLExecError("Unsupported WHERE expression structure");
+            throw SQLExecError("Unsupported operator in WHERE expression");
         }
     } else {
         throw SQLExecError("Unsupported WHERE expression type");
     }
     return where_clause;
 }
+
 
 QueryResult *SQLExec::insert(const InsertStatement *statement) {
     try {
@@ -207,7 +237,42 @@ QueryResult *SQLExec::del(const DeleteStatement *statement) {
 
 
 QueryResult *SQLExec::select(const SelectStatement *statement) {
-    return new QueryResult("SELECT statement not yet implemented");  // FIXME
+    Identifier table_name = statement->fromTable->getName();
+
+    // check table exists
+    ValueDict where = {{"table_name", Value(table_name)}};
+    Handles* tabMeta = SQLExec::tables->select(&where);
+    bool tableExists = !tabMeta->empty();
+    delete tabMeta;
+    if (!tableExists)
+        throw SQLExecError("attempting to select from non-existent table " + table_name);
+    DbRelation& table = SQLExec::tables->get_table(table_name);
+    ColumnNames* cn = new ColumnNames();
+    for (const Expr* expr : *statement->selectList) {
+        if (expr->type == kExprStar)
+            for (const Identifier& col : table.get_column_names())
+                cn->push_back(col);
+        else
+            cn->push_back(expr->name);
+    }
+
+    // start base of plan at a TableScan
+    EvalPlan* plan = new EvalPlan(table);
+
+    // enclose in selection if where clause exists
+    if (statement->whereClause){
+        ValueDict where_clause = where_clause_from_expr(statement->whereClause, table);
+        plan = new EvalPlan(&where_clause, plan);
+    }
+            
+    // wrap in project
+    plan = new EvalPlan(cn, plan);
+
+    // optimize and evaluate
+    plan = plan->optimize();
+    ValueDicts* rows = plan->evaluate();
+    delete plan;
+    return new QueryResult(cn, table.get_column_attributes(*cn), rows, "successfully return " + to_string(rows->size()) + " rows");
 }
 
 
@@ -501,4 +566,3 @@ QueryResult *SQLExec::show_columns(const ShowStatement *statement) {
     delete handles;
     return new QueryResult(column_names, column_attributes, rows, "successfully returned " + to_string(n) + " rows");
 }
-
