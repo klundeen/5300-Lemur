@@ -149,6 +149,11 @@ SQL> quit
 
 To test Milestone 3 and 4, run through the example that professor gave in the Milestone 4 assignment page. Requirements 1-4 are satisfied in this project.
 
+### Note
+After Doing delete if you try to insert same data with index:
+- "Error: Insert failed: Duplicate keys are not allowed in unique index"
+- It will add the data into the table. 
+
 ## Tools
 
 <a href="https://github.com/klundeen/5300-Lemur">
